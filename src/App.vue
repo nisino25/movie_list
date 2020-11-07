@@ -240,7 +240,7 @@ export default defineComponent( {
               this.condition = 'randomSuccess'
               this.isFetchingMovie = false;
             }else{
-              console.log(`I failed: ${this.count}`)
+              console.log(`I  trully failed: ${this.count}`)
               this.count++
             }
         }else{
@@ -380,4 +380,3 @@ export default defineComponent( {
   
 }
 </style>
-
