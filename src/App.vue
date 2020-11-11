@@ -1,8 +1,8 @@
 <template>
   <div>
     <span>Search movies</span>&nbsp;  &nbsp;  
-    <button>Login </button>
-    <button>Sign Up</button>
+    <button v-if="!isLoggedIn" @click="signInWithGoogle">Login or sign up </button>
+    <button v-else @click="signOut">Log out</button>
     <br><br>
   </div>
   <div>
@@ -24,7 +24,7 @@
     
 
 
-     <button @click="CombineTest">Test </button>&nbsp;&nbsp;
+     <button @click="combineTest">Test </button>&nbsp;&nbsp;
     <button @click="GoodRating">Good rating only </button>&nbsp;&nbsp;
     <button @click="popMovie">Popular movie only </button>&nbsp;&nbsp;
     <!-- <button @click="GoodRating">Good rating only </button>&nbsp;&nbsp; -->
@@ -154,6 +154,10 @@
                   </div>
                 </li>
                 <li>
+                  <button @click="toggleFavorite(result.id)">Toggle Favorite</button>
+                  <div>Favorite?: {{ isFavorite(result.id) }}</div>
+                </li>
+                <li>
                   <div class="reusult">
                     <div class="title" v-if="result.popularity !== null || result.popularity === 0">Popularity: {{ result.popularity }}</div>
                   </div>
@@ -207,23 +211,29 @@
 </template>
 
 <script>
-var foundAudio = new Audio('/audio/118655__pyzaist__yay.wav')
-
-
 import { defineComponent } from 'vue';
+import firebase from 'firebase'
+import { auth, AuthStore, db } from './main2.js'
+
+var foundAudio = new Audio('/audio/118655__pyzaist__yay.wav')
 
 export default defineComponent( {
   computed: {
     imgLoadingStatus() {
-      // if (!this.result) return "Result Not Found";
-
       if (this.isImageLoaded) {
         return "Loaded";
       } else {
         return "Loading";
       }
     },
+    isLoggedIn() {
+      return !!AuthStore.value.currentUser
+    },
+    currentUser() {
+      return AuthStore.value.currentUser
+    }
   },
+  
   data() {
     return{
       isFetchingMovie: false,
@@ -263,9 +273,57 @@ export default defineComponent( {
 
       multipleYears: false,
 
+      favoriteData: {}
     }
    },
    methods: {
+    async signInWithGoogle() {
+      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      const provider = new firebase.auth.GoogleAuthProvider()
+
+      firebase.auth().signInWithPopup(provider)
+      
+    },
+    async signOut() {
+      await auth.signOut()
+    },
+    async toggleFavorite(movieId) {
+      if (!this.currentUser) return
+      const docRef = db.collection('userFavorites').doc(this.currentUser.uid)
+      const val = await docRef.get()
+
+      const favoriteData = val.exists ? val.data() : {}
+      // let favoriteData
+      // if (data.exists) {
+      //   favoriteData = val.data()
+      // } else {
+      //   favoriteData = {}
+      // }
+
+      /**
+       * 既にtrueだったら -> falseに変わる
+       * 既にfalseふぁったら -> trueに変わる
+       * まだない(undefined)だったら -> trueに変わる
+       */
+      favoriteData[movieId] = !favoriteData[movieId]
+
+      await docRef.set(favoriteData)
+      this.favoriteData = favoriteData
+
+      /**
+       * userFavorites
+       *    ┗ userId1
+       *        ┗ {
+       *             movieId1: true
+       *             movieId2: false
+       *          }
+       *    ┗ userId2
+       * 
+       */
+    },
+    isFavorite(movieId) {
+      return !!this.favoriteData[movieId]
+    },
     async getLatestNum(contentType){
       // https://api.themoviedb.org/3/movie/latest?api_key=3019330967bc149f12628b6c43bd5a32
       // https://api.themoviedb.org/3/tv/latest?api_key=3019330967bc149f12628b6c43bd5a32
@@ -283,7 +341,7 @@ export default defineComponent( {
 
         console.log(`latest:${this.latest}`)
      },
-    async CombineTest(){
+    async combineTest(){
       this.multipleYears = true;
       this.showingPage = 1
       this.paginationNeeded = true
