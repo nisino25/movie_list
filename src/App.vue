@@ -1,6 +1,6 @@
 <template>
   <div>
-    
+      
     <strong v-if="isLoggedIn">Welcome {{currentUser.displayName}}!  </strong>
     <div v-if="isLoggedIn">
       <strong v-if="favMovieCount === 0 && !CountedAlredy " >
@@ -26,8 +26,6 @@
       <button >ID Search</button>
       <br><br>
     </form>
-    <input type="number" placeholder="ID " v-model="MovieNum">&nbsp;
-    <button @click="idCheck(MovieNum)" >ID Check</button><br><br>
     <!-- <input type="text" placeholder="Type to find a movie " v-model="CollectionNum">&nbsp;
     <button @click="collectionSearch" >Search</button> -->
     <input type="text" placeholder="Type to find a movie " v-model="movieString">&nbsp;
@@ -38,7 +36,18 @@
     <input type="number" placeholder="Year " v-model="movieYear">&nbsp;
     <button @click="movieYearSearch(1)" >Popular movies from the year</button>
     <br><br>
-    
+
+    <div v-on:change="onChangeList">
+        <select v-model="selectedDecades"> 
+          <option value="1971">1971-1980</option>
+          <option value="1981">1981-1990</option>
+          <option value="1991">1991-2000</option>
+          <option value="2001">2001-2010</option>
+          <option value="2011">2011-2020</option>
+          <option value="0">Best from decades</option>
+        </select>
+    </div>
+    <br>
 
 
      <button @click="combineTest">Test </button>&nbsp;&nbsp;
@@ -165,7 +174,9 @@
                 <li > 
                   <div class="reusult">
                     <strong v-if="!(multipleYears)" class="minutes">{{i + 1}}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_title }} <br></strong>
-                    <strong v-if="multipleYears" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears">  {{ result.original_title }} <br></strong>
+                    <strong v-if="multipleYears && !decades" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears && !decades"> {{ result.original_title }} <br></strong>
+                    <strong v-if="multipleYears && decades && (i-19) %  10 !==0 " class="minutes">{{result.release_date.substring(0,4)}}: NO.{{(i-19) %  10}}  </strong><br> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 !==0 " >  {{ result.original_title }} <br></strong>
+                    <strong v-if="multipleYears && decades && (i-19) %  10 ===0" class="minutes">{{result.release_date.substring(0,4)}}: NO.{{10}}  </strong> <br>&nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 ===0" >  {{ result.original_title }} <br></strong>
                   </div>
                 </li>
                 <li>
@@ -323,11 +334,58 @@ export default defineComponent( {
       countCount: 0,
       pageForMyLists: false,
       MyListPage: 1,
+      selectedDecades: 0,
+      decades: false,
 
     }
 
    },
   methods: {
+  async onChangeList(){
+    if(this.selectedDecades === 0){
+      return
+    }
+
+    
+    this.decades = true;
+    this.pageForMyLists = false;
+    this.multipleYears = true;
+    this.showingPage = 1
+    this.paginationNeeded = true
+    this.multipleMovies = true
+    this.movieHit = 0;
+    this.count =0;
+    this.isImageLoaded = false;
+    this.condition = 'searching';
+    this.isFetchingMovie = true;
+    let specificYear = this.selectedDecades;
+    // const query = this.query
+    let URL = `https://api.themoviedb.org/3/discover/movie?api_key=3019330967bc149f12628b6c43bd5a32&sort_by=revenue.desc&include_adult=true&include_video=false&page=1&primary_release_year=${specificYear}`
+    const res = await fetch(URL)
+    const json = await res.json()
+    this.results = json.results
+
+    
+    let MaxYear = parseInt(specificYear) + 10
+
+    while(specificYear < MaxYear){
+      const res = await fetch(URL)
+      const json = await res.json()
+      let jsonCount = 0;
+      while (jsonCount < 10){
+        this.results =  this.results.concat(json.results[jsonCount])
+        jsonCount++;
+      }
+      specificYear++;
+      URL = `https://api.themoviedb.org/3/discover/movie?api_key=3019330967bc149f12628b6c43bd5a32&sort_by=revenue.desc&include_adult=true&include_video=false&page=1&primary_release_year=${specificYear}`;
+
+    }
+
+    this.isFetchingMovie = false
+
+    // console.log(this.results)
+    this.condition = 'randomSuccess'
+  },
   async idCheck(movieId){
     console.log(this.favLists)
     console.log(`Checking:${movieId}`)
@@ -339,6 +397,7 @@ export default defineComponent( {
     console.log(!!this.favLists[movieId])
   },
   async getFavorite() {
+    this.decades = false
     this.CountedAlredy = true;
     var docRef = 
     db.collection("userFavorites").doc(this.currentUser.uid)
@@ -372,7 +431,8 @@ export default defineComponent( {
   async showFavLists(page){
     if(this.favMovieCount === 0)
       return;
-
+    
+    this.decades = false;
     this.pageForMyLists = true;
     this.multipleYears = false;
     this.showingPage = page
@@ -508,6 +568,7 @@ export default defineComponent( {
       console.log(`latest:${this.latest}`)
     },
   async combineTest(){
+    this.decades = false;
     this.pageForMyLists = false;
     this.multipleYears = true;
     this.showingPage = 1
@@ -549,6 +610,7 @@ export default defineComponent( {
     console.log(this.results)
   },
   async movieYearSearch(page){
+    this.decades = false;
     this.pageForMyLists = false;
     this.multipleYears = false;
     this.showingPage = page
@@ -588,6 +650,7 @@ export default defineComponent( {
 
     },
   async searchMovie() {
+    this.decades = false;
     this.pageForMyLists = false;
     this.multipleYears = true;
     this.multipleMovies = false;
@@ -621,6 +684,7 @@ export default defineComponent( {
     
   },
   async movieStringSearch() {
+    this.decades = false;
     this.pageForMyLists = false;
     this.multipleYears = false;
     this.multipleMovies = true
@@ -648,6 +712,7 @@ export default defineComponent( {
     }
   },
   async RandomSearch(){
+    this.decades = false;
     this.multipleYears = true;
     this.multipleMovies = false;
     this.isImageLoaded = false
@@ -697,6 +762,7 @@ export default defineComponent( {
     this.isFetchingMovie = false; 
   },
   async CensoredSearch(keyword){
+    this.decades = false;
     this.multipleYears = true;
     this.multipleMovies = false;
     this.isImageLoaded = false
@@ -754,6 +820,7 @@ export default defineComponent( {
     this.searh18 = false
   },
   async GoodRating(){
+    this.decades = false;
     this.multipleYears = true;
     this.multipleMovies = false;
     this.isImageLoaded = false
@@ -805,6 +872,7 @@ export default defineComponent( {
     console.log(`id: ${this.results.id}`)
   },
   async popMovie(){
+    this.decades = false;
     this.multipleYears = true;
     this.multipleMovies = false;
     this.isImageLoaded = false
@@ -856,6 +924,7 @@ export default defineComponent( {
     console.log(`condition: ${this.condition}`)
   },
   async collectionSearch(){
+    this.decades = false;
     this.multipleYears = true;
     this.multipleMovies = false;
     this.isImageLoaded = false
