@@ -52,15 +52,24 @@
       <div class="title" v-if="count > 0">Going through {{ count }} movies</div>
     </div>
     
-    <div class="reusult" v-if="!(paginationNeeded)">
+    <div class="reusult" v-if="!(paginationNeeded)|| (paginationNeeded && movieHit !==0 )">
+    <!-- <div class="reusult" v-if="!(paginationNeeded)"> -->
       <div class="title" v-if="movieHit > 0">Showing {{ movieHit }} movies</div>
     </div> 
 
     <!-- pagination -->
-    <button class="pagenation" v-else v-for="index in 10" :key="index"  @click="movieYearSearch(index)">
-        <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
-        <strong v-else>{{index}}</strong>
-    </button>&nbsp;
+    <div v-if="paginationNeeded && movieHit ===0" >
+      <button class="pagenation" v-for="index in 10" :key="index"  @click="movieYearSearch(index)">
+          <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+          <strong v-else>{{index}}</strong>
+      </button>&nbsp;
+    </div>
+    <div v-if="paginationNeeded && movieHit !==0" >
+      <button class="pagenation" v-for="index in roundUpPAge" :key="index"  @click="showFavLists(index)">
+          <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+          <strong v-else>{{index}}</strong>
+      </button>&nbsp;
+    </div>
 
     <div v-if="this.multipleMovies === false">
 
@@ -84,8 +93,8 @@
               </div>
             </li>
             <li>
-                  <button v-if="isLoggedIn" @click="toggleFavorite(results.id)">Toggle Favorite</button>
-                  <div>Favorite?: {{ isFavorite(results.id) }}</div>
+                  <button v-if="isLoggedIn && !(!!this.favLists[results.id])" @click="toggleFavorite(results.id)" >Add to Favorite <br></button>
+                  <button v-if="isLoggedIn && (!!this.favLists[results.id])" @click="toggleFavorite(results.id)" >Remove from  Favorite<br></button> 
             </li>
             <li >
               <div class="reusult">
@@ -227,6 +236,19 @@
             <strong class="overview">No movie with the keyword</strong>
         </div>
     </div>
+    <!-- pagination -->
+    <div v-if="paginationNeeded && movieHit ===0" >
+      <button class="pagenation" v-for="index in 10" :key="index"  @click="movieYearSearch(index)">
+          <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+          <strong v-else>{{index}}</strong>
+      </button>&nbsp;
+    </div>
+    <div v-if="paginationNeeded && movieHit !==0" >
+      <button class="pagenation" v-for="index in roundUpPAge" :key="index"  @click="showFavLists(index)">
+          <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+          <strong v-else>{{index}}</strong>
+      </button>&nbsp;
+    </div>
     
   </div>
 </template>
@@ -299,6 +321,8 @@ export default defineComponent( {
       favMovieCount: 0,
       CountedAlredy: false,
       countCount: 0,
+      pageForMyLists: false,
+      MyListPage: 1,
 
     }
 
@@ -330,15 +354,17 @@ export default defineComponent( {
           
           // console.log(this.favLists)
           for (i in this.favLists){
-          if(this.favLists[i]) {
-            this.updatedMovieLists[this.favMovieCount] = i
-            this.favMovieCount ++;
-            // console.log(this.updatedMovieLists[this.favMovieCount - 1])
-          } 
-        }
+            if(this.favLists[i]) {
+              this.updatedMovieLists[this.favMovieCount] = i
+              this.favMovieCount ++;
+              // console.log(this.updatedMovieLists[this.favMovieCount - 1])
+            } 
+          }
+          this.roundUpPAge = Math.ceil(this.updatedMovieLists.length /20)
         } else {
           console.log("No such document!");
         }
+
     }).catch((error) => {
       console.log("Error getting document:", error);
     });
@@ -346,7 +372,8 @@ export default defineComponent( {
   async showFavLists(page){
     if(this.favMovieCount === 0)
       return;
-    
+
+    this.pageForMyLists = true;
     this.multipleYears = false;
     this.showingPage = page
     this.paginationNeeded = true
@@ -359,27 +386,44 @@ export default defineComponent( {
     const query = this.query
     this.countCount = 0;
     let fakeLists = [];
+    let maxForPage = 0;
 
-    const res = await fetch(`${this.firstPart}${this.updatedMovieLists[this.countCount]}${this.secondePart}`)
+    this.countCount = page*20 -20
+    const res = await fetch(`${this.firstPart}${this.updatedMovieLists[page*20 -20]}${this.secondePart}`)
     const json = await res.json()
-    // console.log(json)
-    // this.results= this.results.concat(json)
     fakeLists = fakeLists.concat(json)
-    console.log('first-------')
-    console.log(fakeLists)
     this.countCount ++
 
-    while(this.countCount < this.favMovieCount){
+    if(page* 20 >= this.favMovieCount){
+      maxForPage = this.favMovieCount
+    }else{
+      maxForPage = page*20
+    }
+    console.log(`counconut: ${this.countCount}`)
+    console.log(`macforpage:${maxForPage}`)
+
+    while(this.countCount < maxForPage){
       const res = await fetch(`${this.firstPart}${this.updatedMovieLists[this.countCount]}${this.secondePart}`)
       const json = await res.json()
-      // console.log(json.original_title)
-      // this.results =  this.results.concat(json)
-      // this.results = this.results.concat(json)
       fakeLists = fakeLists.concat(json)
-      // console.log(this.results)
       this.countCount ++
+      console.log('hey2')
     }
+    
 
+
+
+    // const res = await fetch(`${this.firstPart}${this.updatedMovieLists[this.countCount]}${this.secondePart}`)
+    // const json = await res.json()
+    // fakeLists = fakeLists.concat(json)
+    // this.countCount ++
+
+    // while(this.countCount < this.favMovieCount){
+    //   const res = await fetch(`${this.firstPart}${this.updatedMovieLists[this.countCount]}${this.secondePart}`)
+    //   const json = await res.json()
+    //   fakeLists = fakeLists.concat(json)
+    //   this.countCount ++
+    // }
 
     this.isFetchingMovie = false
     this.condition = 'randomSuccess'
@@ -390,10 +434,7 @@ export default defineComponent( {
     
 
     this.results= fakeLists
-
     this.movieHit = this.results.length
-    console.log('here we go')
-    console.log(this.results)
     // console.log(`Thing u need: ${this.movieHit}`)
     let countFor = 0
     while( countFor < this.favMovieCount){
@@ -403,7 +444,7 @@ export default defineComponent( {
     // for (result, i in this.results){
     //   console.log(this.results[i])
     // }
-
+    console.log(this.movieHit)
   },
   async signInWithGoogle() {
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
@@ -449,9 +490,6 @@ export default defineComponent( {
     console.log('success')
     this.getFavorite()
   },
-  async isFavorite(id) {
-    return 'Yes sie'
-  },
   async getLatestNum(contentType){
     // https://api.themoviedb.org/3/movie/latest?api_key=3019330967bc149f12628b6c43bd5a32
     // https://api.themoviedb.org/3/tv/latest?api_key=3019330967bc149f12628b6c43bd5a32
@@ -470,6 +508,7 @@ export default defineComponent( {
       console.log(`latest:${this.latest}`)
     },
   async combineTest(){
+    this.pageForMyLists = false;
     this.multipleYears = true;
     this.showingPage = 1
     this.paginationNeeded = true
@@ -510,6 +549,7 @@ export default defineComponent( {
     console.log(this.results)
   },
   async movieYearSearch(page){
+    this.pageForMyLists = false;
     this.multipleYears = false;
     this.showingPage = page
     this.paginationNeeded = true
@@ -548,6 +588,7 @@ export default defineComponent( {
 
     },
   async searchMovie() {
+    this.pageForMyLists = false;
     this.multipleYears = true;
     this.multipleMovies = false;
     this.count =0
@@ -580,6 +621,7 @@ export default defineComponent( {
     
   },
   async movieStringSearch() {
+    this.pageForMyLists = false;
     this.multipleYears = false;
     this.multipleMovies = true
     this.movieHit = 0;
