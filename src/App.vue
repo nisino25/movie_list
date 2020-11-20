@@ -1,86 +1,185 @@
 <template>
   <div>
-      
-    <strong v-if="isLoggedIn">Welcome {{currentUser.displayName}}!  </strong>
-    <div v-if="isLoggedIn">
-      <strong v-if="favMovieCount === 0 && !CountedAlredy " >
-        <strong >{{getFavorite()}}</strong>
-      </strong>
-      <strong v-if="favMovieCount !== 0" >You have {{favMovieCount}} movies on your lists </strong><br>
-    </div>
-
-    <img v-if="isLoggedIn" :src="currentUser.photoURL" alt=""  ><br>
-    <span>Search movies</span>&nbsp;  &nbsp;  
-    <button v-if="!isLoggedIn" @click="signInWithGoogle">Login or sign up </button>
-    <button v-else @click="signOut">Log out</button><br>
-    <button @click="showFavLists(1)"  v-if="isLoggedIn">My lists</button>
-    <div v-if="isLoggedIn && favLists !== '' && favMovieCount !==0">
-      <strong >{{favMovieCount}}: {{updatedMovieLists}}</strong>
-    </div>
-  
-    <br><br>
-  </div>
-  <div>
-    <form  @submit.prevent="searchMovie" >
-      <input type="number" placeholder="Type to find a movie " v-model="MovieNum">&nbsp;
-      <button >ID Search</button>
-      <br><br>
-    </form>
-    <!-- <input type="text" placeholder="Type to find a movie " v-model="CollectionNum">&nbsp;
-    <button @click="collectionSearch" >Search</button> -->
-    <input type="text" placeholder="Type to find a movie " v-model="movieString">&nbsp;
-    <button @click="movieStringSearch" >Key word Search</button>
-    <br><br>
-
-
-    <input type="number" placeholder="Year " v-model="movieYear">&nbsp;
-    <button @click="movieYearSearch(1)" >Popular movies from the year</button>
-    <br><br>
-
-    <div v-on:change="onChangeList">
-        <select v-model="selectedDecades"> 
-          <option value="1971">1971-1980</option>
-          <option value="1981">1981-1990</option>
-          <option value="1991">1991-2000</option>
-          <option value="2001">2001-2010</option>
-          <option value="2011">2011-2020</option>
-          <option value="0">Best from decades</option>
-        </select>
-    </div>
-    <br>
-
-
-     <button @click="combineTest">Test </button>&nbsp;&nbsp;
-    <button @click="GoodRating">Good rating only </button>&nbsp;&nbsp;
-    <button @click="popMovie">Popular movie only </button>&nbsp;&nbsp;
-    <!-- <button @click="GoodRating">Good rating only </button>&nbsp;&nbsp; -->
-    <button @click="RandomSearch">Random search</button><br><br>
-    <button @click="CensoredSearch('All')">No adult search</button>&nbsp;&nbsp;
-    <button @click="CensoredSearch('18+')">Adult search</button><br><br>
-    <div class="reusult">
-      <div class="title" v-if="count > 0">Going through {{ count }} movies</div>
-    </div>
     
-    <div class="reusult" v-if="!(paginationNeeded)|| (paginationNeeded && movieHit !==0 )">
-    <!-- <div class="reusult" v-if="!(paginationNeeded)"> -->
-      <div class="title" v-if="movieHit > 0">Showing {{ movieHit }} movies</div>
-    </div> 
+    <div><!-- login info -->
+      <strong v-if="isLoggedIn">Welcome {{currentUser.displayName}}!  </strong>
+      <div v-if="isLoggedIn">
+        <strong v-if="favMovieCount === 0 && !CountedAlredy " >
+          <strong >{{getLists()}}</strong>
+        </strong>
+        <strong >You have {{favMovieCount}} movies and {{favTvCount}} TV shows on your lists </strong><br>
+      </div>
 
-    <!-- pagination -->
-    <div v-if="paginationNeeded && movieHit ===0" >
-      <button class="pagenation" v-for="index in 10" :key="index"  @click="movieYearSearch(index)">
-          <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
-          <strong v-else>{{index}}</strong>
-      </button>&nbsp;
+      <img v-if="isLoggedIn" :src="currentUser.photoURL" alt=""  ><br>
+      <!-- <span>Search movies</span>&nbsp;  &nbsp;   -->
+      <button v-if="!isLoggedIn" @click="signInWithGoogle">Login or sign up </button>
+      <button v-else @click="signOut">Log out</button><br><br>
+    </div>  
+    <div v-if="isLoggedIn">
+      <div><!-- menu button -->
+        <button @click="changeTab('menu')"  v-if="isLoggedIn && shownTab !== 'menu'">Back to menu</button>&nbsp;
+        <button @click="changeTab('searching')"  v-if="isLoggedIn">Find Movies or TV shows</button>&nbsp;
+
+        <button @click="changeTab('myFavLists')"  v-if="isLoggedIn &&( favMovieCount !== 0 || favTvCount !==0)">Favorite Lists</button>&nbsp;
+        <button  v-if="isLoggedIn &&( favMovieCount === 0 && favTvCount ===0)" class="tabSelected">Favorite Lists</button>&nbsp;
+        <!-- <button @click="showFavLists(1,'movie')"  v-if="isLoggedIn">Favorite Movies</button>&nbsp;
+        <button @click="showFavLists(1,'tv')"  v-if="isLoggedIn">Favorite TV shows</button>&nbsp; -->
+        <button @click="showFavLists(1)"  v-if="isLoggedIn">Watch later</button>&nbsp;
+        <button @click="showFavLists(1)"  v-if="isLoggedIn">Watched lists</button>&nbsp;
+      </div>
+
+      <!-- <button @click="showFavLists(1)"  v-if="isLoggedIn">My tv lists</button>&nbsp;
+      <button v-if="isLoggedIn">Watch later</button>&nbsp;
+      <button v-if="isLoggedIn">Watched list</button>&nbsp; --> 
+      <div v-if="shownTab === 'myFavLists'">
+        <div v-if="isLoggedIn && favLists !== '' && favMovieCount !==0">
+          <strong >Movie :{{favMovieCount}}: {{updatedMovieLists}}</strong>
+        </div> <br><br>
+        <div v-if="isLoggedIn && favTvCount !== '' && favTvCount !==0">
+          <strong >TV :{{favTvCount}}: {{updatedTvLists}}</strong>
+        </div>
+        <br>
+        <div>
+          <button v-if="!showingMovie" @click="showFavLists(1,'movie')">Change to Movies lists</button>
+          &nbsp;
+          <button v-if="showingMovie" @click="showFavLists(1,'tv')">Change to TV lists</button>
+          <br>
+        </div>
+      </div>
+    
+      <br><br>
     </div>
-    <div v-if="paginationNeeded && movieHit !==0" >
+   
+  </div>
+
+
+
+  <div>
+    <div v-if="shownTab === 'searching'">
+      <div>
+        <button v-if="!tabMovieSelected" @click="toggleTab">Change to Movies search</button>
+        &nbsp;
+        <button v-if="tabMovieSelected" @click="toggleTab">Change to TV search</button>
+        <br>
+      </div>
+
+      <div v-if="!tabMovieSelected"><!-- tv saearch -->
+        <strong>You are searching TV shows now</strong> <br><br>
+
+        <div>
+          <select v-model="chosenGenre"> 
+            <option value="10759">Action</option>
+            <option value="16">Animation</option>
+            <option value="35">Comedy</option>
+            <option value="18">Drama</option>
+            <option value="9648">Mystery</option>
+            <option value="10765">Sci-Fo</option>
+            <option value="0">All Genres</option>
+          </select> &nbsp;
+          <select v-model="excludeGenre"> 
+            <option value="10759">No Action</option>
+            <option value="16">No Animation</option>
+            <option value="35">No Comedy</option>
+            <option value="18">No Drama</option>
+            <option value="9648">No Mystery</option>
+            <option value="10765">No Sci-Fo</option>
+            <option value="0"></option>
+          </select> &nbsp;
+          <select v-model="originalLanguage"> 
+            <option value="ja">Japanese</option>
+            <option value="en">English</option>
+            <option value="ko">Korean</option>
+            <option value="0">All languages</option>
+          </select> &nbsp;
+          <button @click="resetChoices">Reset </button>
+          
+        </div><br>
+        <input type="text" placeholder="Type to find a movie " v-model="movieString">&nbsp;
+        <button @click="StringSearch('tv')" >Key word Search for TV shows</button><br><br>
+
+        
+        <input type="number" placeholder="Year " v-model="contentYear">&nbsp;
+        <button @click="contentYearSearch(1)" >Popular TV Shows from the year</button><br><br>
+
+        <div v-on:change="onChangeList">
+            <select v-model="selectedDecades"> 
+              <option value="1971">1971-1980</option>
+              <option value="1981">1981-1990</option>
+              <option value="1991">1991-2000</option>
+              <option value="2001">2001-2010</option>
+              <option value="2011">2011-2020</option>
+              <option value="0">Best from decades</option>
+            </select>
+        </div><br>
+
+      </div>
+
+      <div velse v-if="tabMovieSelected"> <!-- movie saearch -->
+        <strong>You are searching Movies now</strong> <br><br>
+        <input type="text" placeholder="Type to find a movie " v-model="movieString">&nbsp;
+        <button @click="StringSearch('movie')" >Key word Search for Movies</button>
+        <br><br>
+
+
+        <input type="number" placeholder="Year " v-model="contentYear">&nbsp;
+        <button @click="contentYearSearch(1)" >Popular movies from the year</button><br><br>
+
+        <div v-on:change="onChangeList">
+            <select v-model="selectedDecades"> 
+              <option value="1971">1971-1980</option>
+              <option value="1981">1981-1990</option>
+              <option value="1991">1991-2000</option>
+              <option value="2001">2001-2010</option>
+              <option value="2011">2011-2020</option>
+              <option value="0">Best from decades</option>
+            </select>
+        </div><br>
+
+        <button @click="GoodRating">Good rating only </button>&nbsp;&nbsp;
+        <button @click="popMovie">Popular movie only </button>&nbsp;&nbsp;
+        <!-- <button @click="GoodRating">Good rating only </button>&nbsp;&nbsp; -->
+        <button @click="RandomSearch">Random search</button>&nbsp;&nbsp;
+        <button @click="CensoredSearch('18+') " v-if="isLoggedIn && currentUser.displayName === 'nisino25'">Adult search</button><br><br>
+      </div>
+    </div>
+
+
+    <div>
+      <div class="reusult">
+        <div class="title" v-if="count > 0">Going through {{ count }} movies</div>
+      </div>
+      
+      <div class="reusult" v-if="!(paginationNeeded)|| (paginationNeeded && movieHit !==0 )">
+        <!-- <div class="reusult" v-if="!(paginationNeeded)"> -->
+        <div class="title" v-if="movieHit > 0 && showingMovie">Showing {{ movieHit }} movies</div>
+        <div class="title" v-if="movieHit > 0 && !showingMovie">Showing {{ movieHit }} TV shows</div>
+      </div> 
+      <div v-if="paginationNeeded && movieHit !==0" >
       <button class="pagenation" v-for="index in roundUpPAge" :key="index"  @click="showFavLists(index)">
           <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
           <strong v-else>{{index}}</strong>
       </button>&nbsp;
     </div>
+    </div>
 
-    <div v-if="this.multipleMovies === false">
+    <div v-if="this.multipleContents === false">
+      <!-- pagination -->
+      <div v-if="paginationNeeded && movieHit ===0" >
+        <button class="pagenation" v-for="index in 10" :key="index"  @click="contentYearSearch(index)">
+            <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+            <strong v-else>{{index}}</strong>
+        </button>&nbsp;
+      </div>
+      <div v-if="paginationNeeded && movieHit !==0" >
+        <button class="pagenation" v-for="index in roundUpPAge" :key="index"  @click="showFavLists(index)">
+            <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+            <strong v-else>{{index}}</strong>
+        </button>&nbsp;
+      </div>
+    </div>
+
+
+    <div v-if="this.multipleContents === false">
 
       <hr v-if="condition === 'randomSuccess' || count > 0">
       
@@ -172,14 +271,21 @@
                 
               <ul >
                 <li > 
-                  <div class="reusult">
-                    <strong v-if="!(multipleYears)" class="minutes">{{i + 1}}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_title }} <br></strong>
-                    <strong v-if="multipleYears && !decades" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears && !decades"> {{ result.original_title }} <br></strong>
-                    <strong v-if="multipleYears && decades && (i-19) %  10 !==0 " class="minutes">{{result.release_date.substring(0,4)}}: NO.{{(i-19) %  10}}  </strong><br> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 !==0 " >  {{ result.original_title }} <br></strong>
-                    <strong v-if="multipleYears && decades && (i-19) %  10 ===0" class="minutes">{{result.release_date.substring(0,4)}}: NO.{{10}}  </strong> <br>&nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 ===0" >  {{ result.original_title }} <br></strong>
+                  <div v-if="showingMovie" class="reusult" >
+                    <strong v-if="!(multipleYears)" class="minutes">{{i + 1}}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_title }} </strong>
+                    <strong v-if="multipleYears && !decades" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears && !decades"> {{ result.original_title }} </strong>
+                    <strong v-if="multipleYears && decades && (i-19) %  10 !==0 " class="minutes">{{result.release_date.substring(0,4)}}: NO.{{(i-19) %  10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 !==0 " >  {{ result.original_title }} </strong>
+                    <strong v-if="multipleYears && decades && (i-19) %  10 ===0" class="minutes">{{result.release_date.substring(0,4)}}: NO.{{10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 ===0" >  {{ result.original_title }} </strong>
+                    <br>
+                  </div>
+                  
+
+                  <div v-if="!showingMovie">
+                    <strong v-if="!(multipleYears)" class="minutes">{{i + 1}}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_name }} <br></strong>
                   </div>
                 </li>
-                <li>
+
+                <li v-if="tabMovieSelected">
                     <div v-if="result.adult">
                       <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
                       <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Check this on Google<br><br></a>
@@ -189,9 +295,23 @@
                       <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Google<br><br></a>
                     </div>
                 </li>
-                <li>
-                  <button v-if="isLoggedIn && !(!!this.favLists[result.id])" @click="toggleFavorite(result.id)" >Add to Favorite <br></button>
-                  <button v-if="isLoggedIn && (!!this.favLists[result.id])" @click="toggleFavorite(result.id)" >Remove from  Favorite<br></button> 
+                <li v-if="!tabMovieSelected">
+                    <div v-if="result.adult">
+                      <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
+                      <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Check this on Google<br><br></a>
+                    </div>
+                    <div v-else>
+                      <a v-bind:href="'https://www.themoviedb.org/tv/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
+                      <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Google<br><br></a>
+                    </div>
+                </li>
+                <li v-if="showingMovie">
+                  <button v-if="isLoggedIn && !(!!this.favLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Add to Favorite <br></button>
+                  <button v-if="isLoggedIn && (!!this.favLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Remove from  Favorite<br></button> 
+                </li>
+                <li v-else>
+                  <button v-if="isLoggedIn && !(!!this.favTvLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Add to Favorite TV <br></button>
+                  <button v-if="isLoggedIn && (!!this.favTvLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Remove from Favorite TV<br></button> 
                 </li>
                 <li >
                   <div class="reusult">
@@ -207,6 +327,8 @@
                 <li>
                   <div class="reusult">
                     <div class="title">{{ result.release_date }}</div>
+                    <div class="title">{{ result.first_air_date }}</div>
+                    
                   </div>
                 </li>
               </ul>
@@ -249,7 +371,7 @@
     </div>
     <!-- pagination -->
     <div v-if="paginationNeeded && movieHit ===0" >
-      <button class="pagenation" v-for="index in 10" :key="index"  @click="movieYearSearch(index)">
+      <button class="pagenation" v-for="index in 10" :key="index"  @click="contentYearSearch(index)">
           <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
           <strong v-else>{{index}}</strong>
       </button>&nbsp;
@@ -260,6 +382,8 @@
           <strong v-else>{{index}}</strong>
       </button>&nbsp;
     </div>
+
+    <back-to-top text="Back to top"></back-to-top>
     
   </div>
 </template>
@@ -268,10 +392,13 @@
 import { defineComponent } from 'vue';
 import firebase from 'firebase'
 import { auth, AuthStore, db } from './main2.js'
+import BackToTop from 'vue-backtotop'
 
 var foundAudio = new Audio('/audio/118655__pyzaist__yay.wav')
 
 export default defineComponent( {
+  components: { BackToTop },
+
   computed: {
     imgLoadingStatus() {
       if (this.isImageLoaded) {
@@ -289,9 +416,9 @@ export default defineComponent( {
   },
   data() {
     return{
-      isFetchingMovie: false,
       firstPart: `https://api.themoviedb.org/3/movie/`,
       secondePart: `?api_key=3019330967bc149f12628b6c43bd5a32`,
+      isFetchingMovie: false,
       latest: '',
       MovieNum: '',
       CollectionNum: '',
@@ -314,12 +441,12 @@ export default defineComponent( {
       generatingCount: 0,
       search18: false,
       
-      movieString: null,
+      movieString: '',
       movieHit: 0,
       testResult: {},
-      multipleMovies: false,
+      multipleContents: false,
 
-      movieYear: '',
+      contentYear: '',
       paginationNeeded: false,
       showingPage: 1,
 
@@ -337,10 +464,141 @@ export default defineComponent( {
       selectedDecades: 0,
       decades: false,
 
+      showingMovie : true,
+      favTvCount: 0,
+      favoriteTvData: {},
+      updatedTvLists: [],
+      favTvLists: '',
+      roundUpPAgeTv: '',
+
+      serarchEngingSeleted: 'movies',
+      tabMovieSelected: true,
+
+      chosenGenre: '0',
+      ApiURL: '',
+
+      shownTab: 'menu',
+
+      originalLanguage: '0',
+      excludeGenre: '0',
+
+
     }
 
    },
   methods: {
+  
+  changeTab(page){
+    this.resetResult();
+    this.shownTab = page
+    if(page === 'myFavLists'){
+      if(this.favMovieCount !== 0){
+        this.showFavLists(1,'movie')
+      }else{
+        this.showFavLists(1,'tv')
+      }
+    }
+    
+  },
+  async signInWithGoogle() {
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    const provider = new firebase.auth.GoogleAuthProvider()
+
+    firebase.auth().signInWithPopup(provider)
+    
+  },
+  async signOut() {
+    await auth.signOut()
+    this.resetResult();
+  },
+  resetChoices(){
+    this.originalLanguage = '0'
+    this.chosenGenre= '0';
+  },
+  resetResult(){
+    let resetCount = 0;
+    while(resetCount < 1 ){
+        this.results=  {
+        original_title: '',
+        poster_path: ``,
+        release_date: '',
+        popularity: '',
+        vote_average: '',
+        overview: '',
+        runtime: '',
+        results: '',
+      };
+      this.MovieNum= '';
+      this.movieHit= 0;
+      this.condition = 'waiting'
+      this.count = 0
+      this.multipleContents = false
+      this.isFetchingMovie = false
+      this.latest = ''
+      this.MovieNum = ''
+      this.query =''
+      this.generatingCount= 0,
+      this.search18=false,
+      this.testResult= {},
+      this.contentYear= '',
+      this.paginationNeeded=false,
+      this.showingPage= 1,
+      this.multipleYears= false,
+      this.countCount= 0,
+      this.pageForMyLists= false,
+      this.MyListPage= 1,
+      this.selectedDecades= 0,
+      this.decades= false,
+      this.showingMovie =true,
+      this.chosenGenre= '0',
+      this.excludeGenre = '0',
+
+      resetCount ++;
+    }
+  },
+  toggleTab(){
+    this.tabMovieSelected = !this.tabMovieSelected
+    this.showingMovie = !this.showingMovie
+    let resetCount = 0
+
+    while(resetCount < 1 ){
+        this.results=  {
+        original_title: '',
+        poster_path: ``,
+        release_date: '',
+        popularity: '',
+        vote_average: '',
+        overview: '',
+        runtime: '',
+        results: '',
+      };
+      this.MovieNum= '';
+      this.movieHit= 0;
+      this.condition = 'waiting'
+      this.count = 0
+      this.multipleContents = false
+      this.isFetchingMovie = false
+      this.latest = ''
+      this.MovieNum = ''
+      this.query =''
+      this.generatingCount= 0,
+      this.search18=false,
+      this.testResult= {},
+      this.contentYear= '',
+      this.paginationNeeded=false,
+      this.showingPage= 1,
+      this.multipleYears= false,
+      this.countCount= 0,
+      this.pageForMyLists= false,
+      this.MyListPage= 1,
+      this.selectedDecades= 0,
+      this.decades= false,
+      this.chosenGenre= '0',
+
+      resetCount ++;
+    }
+    console.log(`Showing movies? : ${this.showingMovie}`)
+  },
   async onChangeList(){
     if(this.selectedDecades === 0){
       return
@@ -352,7 +610,7 @@ export default defineComponent( {
     this.multipleYears = true;
     this.showingPage = 1
     this.paginationNeeded = true
-    this.multipleMovies = true
+    this.multipleContents = true
     this.movieHit = 0;
     this.count =0;
     this.isImageLoaded = false;
@@ -396,13 +654,14 @@ export default defineComponent( {
     // }
     console.log(!!this.favLists[movieId])
   },
-  async getFavorite() {
+  async getLists() {
     this.decades = false
     this.CountedAlredy = true;
-    var docRef = 
-    db.collection("userFavorites").doc(this.currentUser.uid)
     this.favMovieCount = 0;
-    docRef.get().then((doc) => {
+    this.favTvCount = 0;
+
+    var docRefMovie = db.collection("userFavorites").doc(this.currentUser.uid)
+    docRefMovie.get().then((doc) => {
         if (doc.exists) {
           this.favLists = doc.data()
           // console.log(doc.data())
@@ -427,17 +686,51 @@ export default defineComponent( {
     }).catch((error) => {
       console.log("Error getting document:", error);
     });
+
+
+    var docRefTv = db.collection("userTvFavorites").doc(this.currentUser.uid)
+    docRefTv.get().then((doc) => {
+        if (doc.exists) {
+          this.favTvLists = doc.data()
+
+          this.updatedTvLists= []
+          let i = 0;
+          
+          // console.log(this.favLists)
+          for (i in this.favTvLists){
+            if(this.favTvLists[i]) {
+              this.updatedTvLists[this.favTvCount] = i
+              this.favTvCount ++;
+              // console.log(this.updatedMovieLists[this.favMovieCount - 1])
+            } 
+          }
+          this.roundUpPAgeTv = Math.ceil(this.updatedTvLists.length /20)
+        } else {
+          console.log("No such document!");
+        }
+
+    }).catch((error) => {
+      console.log("Error getting document:", error);
+    });
   },
-  async showFavLists(page){
-    if(this.favMovieCount === 0)
+
+  async showFavLists(page,type){
+
+    if(this.favMovieCount === 0 && this.favTvCount === 0)
       return;
     
+    if(type === 'movie'){
+      this.showingMovie = true;
+    }else{
+      this.showingMovie = false;
+    }
+
     this.decades = false;
     this.pageForMyLists = true;
     this.multipleYears = false;
     this.showingPage = page
     this.paginationNeeded = true
-    this.multipleMovies = true
+    this.multipleContents = true
     this.movieHit = 0;
     this.count =0
     this.isImageLoaded = false
@@ -448,26 +741,51 @@ export default defineComponent( {
     let fakeLists = [];
     let maxForPage = 0;
 
-    this.countCount = page*20 -20
-    const res = await fetch(`${this.firstPart}${this.updatedMovieLists[page*20 -20]}${this.secondePart}`)
-    const json = await res.json()
-    fakeLists = fakeLists.concat(json)
-    this.countCount ++
 
-    if(page* 20 >= this.favMovieCount){
-      maxForPage = this.favMovieCount
-    }else{
-      maxForPage = page*20
-    }
-    console.log(`counconut: ${this.countCount}`)
-    console.log(`macforpage:${maxForPage}`)
-
-    while(this.countCount < maxForPage){
-      const res = await fetch(`${this.firstPart}${this.updatedMovieLists[this.countCount]}${this.secondePart}`)
+    if(this.showingMovie){
+      this.countCount = page*20 -20
+      const res = await fetch(`${this.firstPart}${this.updatedMovieLists[page*20 -20]}${this.secondePart}`)
       const json = await res.json()
       fakeLists = fakeLists.concat(json)
       this.countCount ++
-      console.log('hey2')
+
+      if(page* 20 >= this.favMovieCount){
+        maxForPage = this.favMovieCount
+      }else{
+        maxForPage = page*20
+      }
+      console.log(`counconut: ${this.countCount}`)
+      console.log(`macforpage:${maxForPage}`)
+
+      while(this.countCount < maxForPage){
+        const res = await fetch(`${this.firstPart}${this.updatedMovieLists[this.countCount]}${this.secondePart}`)
+        const json = await res.json()
+        fakeLists = fakeLists.concat(json)
+        this.countCount ++
+        console.log('hey2')
+      }
+    }else{
+      this.countCount = page*20 -20
+      const res = await fetch(`https://api.themoviedb.org/3/tv/${this.updatedTvLists[page*20 -20]}${this.secondePart}`)
+      const json = await res.json()
+      fakeLists = fakeLists.concat(json)
+      this.countCount ++
+
+      if(page* 20 >= this.favTvCount){
+        maxForPage = this.favTvCount
+      }else{
+        maxForPage = page*20
+      }
+      console.log(`counconut: ${this.countCount}`)
+      console.log(`macforpage:${maxForPage}`)
+
+      while(this.countCount < maxForPage){
+        const res = await fetch(`https://api.themoviedb.org/3/tv/${this.updatedTvLists[this.countCount]}${this.secondePart}`)
+        const json = await res.json()
+        fakeLists = fakeLists.concat(json)
+        this.countCount ++
+        console.log('hey2')
+      }
     }
     
 
@@ -506,21 +824,19 @@ export default defineComponent( {
     // }
     console.log(this.movieHit)
   },
-  async signInWithGoogle() {
-    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-    const provider = new firebase.auth.GoogleAuthProvider()
-
-    firebase.auth().signInWithPopup(provider)
-    
-  },
-  async signOut() {
-    await auth.signOut()
-  },
-  async toggleFavorite(movieId) {
+  
+  async toggleFavorite(contentId) {
     console.log('trying..')
     if (!this.currentUser) return
 
-    const docRef = db.collection('userFavorites').doc(this.currentUser.uid)
+    let folder = 'userFavorites'
+    if(!this.showingMovie){
+      folder = 'userTvFavorites'
+    }
+
+    let docRef = db.collection(folder).doc(this.currentUser.uid)
+    console.log(contentId)
+    
     const val = await docRef.get()
 
     const favoriteData = val.exists ? val.data() : {}
@@ -530,8 +846,8 @@ export default defineComponent( {
      * 既にfalseふぁったら -> trueに変わる
      * まだない(undefined)だったら -> trueに変わる
      */
-    favoriteData[movieId] = !favoriteData[movieId]
-
+    favoriteData[contentId] = !favoriteData[contentId]
+ 
     await docRef.set(favoriteData)
 
     //temorary
@@ -547,13 +863,13 @@ export default defineComponent( {
      *    ┗ userId2
      * 
      */
-    console.log('success')
-    this.getFavorite()
+    console.log(`success to: ${folder}`)
+    this.getLists()
   },
-  async getLatestNum(contentType){
+  async getLatestNum(type){
     // https://api.themoviedb.org/3/movie/latest?api_key=3019330967bc149f12628b6c43bd5a32
     // https://api.themoviedb.org/3/tv/latest?api_key=3019330967bc149f12628b6c43bd5a32
-      if(contentType === 'tv'){
+      if(type === 'tv'){
         const res = await fetch('https://api.themoviedb.org/3/tv/latest?api_key=3019330967bc149f12628b6c43bd5a32')
         const json = await res.json()
         this.latest = json.id
@@ -573,7 +889,7 @@ export default defineComponent( {
     this.multipleYears = true;
     this.showingPage = 1
     this.paginationNeeded = true
-    this.multipleMovies = true
+    this.multipleContents = true
     this.movieHit = 0;
     this.count =0
     this.isImageLoaded = false
@@ -609,13 +925,14 @@ export default defineComponent( {
     this.condition = 'randomSuccess'
     console.log(this.results)
   },
-  async movieYearSearch(page){
+  async contentYearSearch(page){
+
     this.decades = false;
     this.pageForMyLists = false;
     this.multipleYears = false;
     this.showingPage = page
     this.paginationNeeded = true
-    this.multipleMovies = true
+    this.multipleContents = true
     this.movieHit = 0;
     this.count =0
     this.isImageLoaded = false
@@ -623,8 +940,32 @@ export default defineComponent( {
     this.isFetchingMovie = true
     const query = this.query
     
-    const URL = `https://api.themoviedb.org/3/discover/movie?api_key=3019330967bc149f12628b6c43bd5a32&sort_by=revenue.desc&include_adult=true&include_video=false&page=${page}&primary_release_year=${this.movieYear}`
-    const res = await fetch(URL)
+    if(this.showingMovie){
+      this.ApiURL = `https://api.themoviedb.org/3/discover/movie?api_key=3019330967bc149f12628b6c43bd5a32&sort_by=revenue.desc&include_adult=true&include_video=false&page=${page}&primary_release_year=${this.contentYear}`
+    }
+    else{
+      if(this.chosenGenre === "0"){
+        if(this.originalLanguage === '0'){
+          this.ApiURL = `https://api.themoviedb.org/3/discover/tv?api_key=3019330967bc149f12628b6c43bd5a32&language=en-US&sort_by=popularity.desc&first_air_date_year=${this.contentYear}&page=1&timezone=America%2FNew_York&include_null_first_air_dates=false`
+        }else{
+          this.ApiURL = `https://api.themoviedb.org/3/discover/tv?api_key=3019330967bc149f12628b6c43bd5a32&language=en-US&sort_by=popularity.desc&first_air_date_year=${this.contentYear}&page=1&timezone=America%2FNew_York&include_null_first_air_dates=false&with_original_language=${this.originalLanguage}`
+        }
+      }
+      else{
+        if(this.originalLanguage === '0'){
+          this.ApiURL= `https://api.themoviedb.org/3/discover/tv?api_key=3019330967bc149f12628b6c43bd5a32&language=en-US&sort_by=popularity.desc&first_air_date_year=${this.contentYear}&page=1&timezone=America%2FNew_York&with_genres=${this.chosenGenre}&include_null_first_air_dates=false`
+        }else{
+          this.ApiURL= `https://api.themoviedb.org/3/discover/tv?api_key=3019330967bc149f12628b6c43bd5a32&language=en-US&sort_by=popularity.desc&first_air_date_year=${this.contentYear}&page=1&timezone=America%2FNew_York&with_genres=${this.chosenGenre}&include_null_first_air_dates=false&with_original_language=ja`
+        }
+
+      }if(this.excludeGenre !==0){
+        this.ApiURL = `${this.ApiURL}&without_genres=${this.excludeGenre}`
+      }
+      
+      
+    }
+    
+    const res = await fetch(this.ApiURL)
     const json = await res.json()
     console.log(json)
     this.results = json.results
@@ -650,10 +991,11 @@ export default defineComponent( {
 
     },
   async searchMovie() {
+    this.showingMovie = true
     this.decades = false;
     this.pageForMyLists = false;
     this.multipleYears = true;
-    this.multipleMovies = false;
+    this.multipleContents = false;
     this.count =0
     this.isImageLoaded = false
     this.condition = 'searching'
@@ -683,11 +1025,17 @@ export default defineComponent( {
     }
     
   },
-  async movieStringSearch() {
+  async StringSearch(type) {
+    if(type === 'movie'){
+      this.showingMovie = true
+    }else{
+      this.showingMovie = false
+    }
+    
     this.decades = false;
     this.pageForMyLists = false;
     this.multipleYears = false;
-    this.multipleMovies = true
+    this.multipleContents = true
     this.movieHit = 0;
     this.count =0
     this.isImageLoaded = false
@@ -695,11 +1043,11 @@ export default defineComponent( {
     this.isFetchingMovie = true
     const query = this.query
     console.log('heeeey')
-    
-    const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=3019330967bc149f12628b6c43bd5a32&query=${this.movieString } `)
+    const res = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=3019330967bc149f12628b6c43bd5a32&query=${this.movieString } `)
     const json = await res.json()
     this.results = json.results
     this.movieHit = json.results.length
+    console.log(json.results)
 
     this.isFetchingMovie = false
     if(json.success === false){
@@ -712,9 +1060,10 @@ export default defineComponent( {
     }
   },
   async RandomSearch(){
+    this.showingMovie = true
     this.decades = false;
     this.multipleYears = true;
-    this.multipleMovies = false;
+    this.multipleContents = false;
     this.isImageLoaded = false
     this.MovieNum = ''
     this.condition = 'searching'
@@ -762,9 +1111,10 @@ export default defineComponent( {
     this.isFetchingMovie = false; 
   },
   async CensoredSearch(keyword){
+    this.showingMovie = true
     this.decades = false;
     this.multipleYears = true;
-    this.multipleMovies = false;
+    this.multipleContents = false;
     this.isImageLoaded = false
     this.MovieNum = ''
     this.condition = 'searching'
@@ -820,9 +1170,10 @@ export default defineComponent( {
     this.searh18 = false
   },
   async GoodRating(){
+    this.showingMovie = true
     this.decades = false;
     this.multipleYears = true;
-    this.multipleMovies = false;
+    this.multipleContents = false;
     this.isImageLoaded = false
     this.MovieNum = ''
     this.condition = 'searching'
@@ -872,9 +1223,10 @@ export default defineComponent( {
     console.log(`id: ${this.results.id}`)
   },
   async popMovie(){
+    this.showingMovie = true
     this.decades = false;
     this.multipleYears = true;
-    this.multipleMovies = false;
+    this.multipleContents = false;
     this.isImageLoaded = false
     this.MovieNum = ''
     this.condition = 'searching'
@@ -926,7 +1278,7 @@ export default defineComponent( {
   async collectionSearch(){
     this.decades = false;
     this.multipleYears = true;
-    this.multipleMovies = false;
+    this.multipleContents = false;
     this.isImageLoaded = false
     this.MovieNum = ''
     this.condition = 'searching'
@@ -990,6 +1342,9 @@ export default defineComponent( {
   margin-top: 60px;
 }
 
+.tabSelected{
+  color:grey
+}
 .overview {
   color: red;
   /* max-width:300px; */
