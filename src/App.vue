@@ -2,53 +2,53 @@
   <div>
     
     <div><!-- login info -->
-      <strong v-if="isLoggedIn">Welcome {{currentUser.displayName}}!  </strong>
+      <strong v-if="isLoggedIn">Welcome {{currentUser.displayName}}!  </strong>&nbsp;
+      <button v-if="!isLoggedIn" @click="signInWithGoogle">Login or sign up </button>
+      <button v-else @click="signOut">Log out</button><br><br>
       <div v-if="isLoggedIn">
-        <strong v-if="favMovieCount === 0 && !CountedAlredy " >
+        <strong v-if="!CountedAlredy " >
           <strong >{{getLists()}}</strong>
         </strong>
-        <strong >You have {{favMovieCount}} movies and {{favTvCount}} TV shows on your lists </strong><br>
+        <strong class="movie-blue" >Movies</strong>, <strong class="tv-green"> TV Show</strong>,<strong class="total-red">total</strong><br>
+        <strong>Favorties: <strong class="movie-blue">{{MFaCount}},</strong><strong class="tv-green"> {{TFaCount}},</strong><strong class="total-red"> {{MFaCount + TFaCount}}</strong>  &nbsp; 
+          Watched: {{MPaCount}}, {{TPaCount}}, {{MPaCount + TPaCount}}&nbsp; 
+          Later: {{MFuCount}}, {{TFuCount}}, {{MFuCount + TFuCount}} </strong>
+          <!-- <br><br>
+          <strong>Movie{{updatedMFaLists}}</strong> -->
+
+        <!-- <strong >You have {{favMovieCount}} movies and {{favTvCount}} TV shows on your lists </strong><br> -->
       </div>
 
       <img v-if="isLoggedIn" :src="currentUser.photoURL" alt=""  ><br>
       <!-- <span>Search movies</span>&nbsp;  &nbsp;   -->
-      <button v-if="!isLoggedIn" @click="signInWithGoogle">Login or sign up </button>
-      <button v-else @click="signOut">Log out</button><br><br>
+      
     </div>  
     <div v-if="isLoggedIn"><!-- menu -->
       <div><!-- menu button -->
         <button @click="changeTab('menu')"  v-if="isLoggedIn && shownTab !== 'menu'">Back to menu</button>&nbsp;
         <button @click="changeTab('searching')"  v-if="isLoggedIn">Find Movies or TV shows</button>&nbsp;
 
-        <button @click="changeTab('myFavLists')"  v-if="isLoggedIn &&( favMovieCount !== 0 || favTvCount !==0)">Favorite Lists</button>&nbsp;
-        <button  v-if="isLoggedIn &&( favMovieCount === 0 && favTvCount ===0)" class="tabSelected">Favorite Lists</button>&nbsp;
-        <!-- <button @click="showFavLists(1,'movie')"  v-if="isLoggedIn">Favorite Movies</button>&nbsp;
-        <button @click="showFavLists(1,'tv')"  v-if="isLoggedIn">Favorite TV shows</button>&nbsp; -->
-        <button @click="showFavLists(1)"  v-if="isLoggedIn">Watch later</button>&nbsp;
-        <button @click="showFavLists(1)"  v-if="isLoggedIn">Watched lists</button>&nbsp;
+        <button @click="changeTab('favorites')"  v-if="isLoggedIn &&( MFaCount !== 0 || TFaCount !==0)">Favorite Lists</button>&nbsp;
+        <button  v-if="isLoggedIn &&( MFaCount === 0 && TFaCount ===0)" class="tabSelected">Favorite Lists</button>&nbsp;
+
+        <button @click="changeTab('past')"  v-if="isLoggedIn">Watched Lists</button>&nbsp;
+        <button  v-if="isLoggedIn &&( MPaCount === 0 && TPaCount ===0)" class="tabSelected">Watched Lists</button>&nbsp;
+
+        <button @click="changeTab('future')"  v-if="isLoggedIn">Watch Later</button>&nbsp;
+        <button  v-if="isLoggedIn &&( MFuCount === 0 && TFuCount ===0)" class="tabSelected">Watch Later</button>&nbsp;
       </div>
       <hr v-if="(isLoggedIn && shownTab !== 'menu') ">
 
-      <!-- <button @click="showFavLists(1)"  v-if="isLoggedIn">My tv lists</button>&nbsp;
-      <button v-if="isLoggedIn">Watch later</button>&nbsp;
-      <button v-if="isLoggedIn">Watched list</button>&nbsp; --> 
-      <div v-if="shownTab === 'myFavLists'">
-        <div v-if="isLoggedIn && favLists !== '' && favMovieCount !==0">
-          <strong >Movie :{{favMovieCount}}: {{updatedMovieLists}}</strong>
-        </div> <br><br>
-        <div v-if="isLoggedIn && favTvCount !== '' && favTvCount !==0">
-          <strong >TV :{{favTvCount}}: {{updatedTvLists}}</strong>
-        </div>
+
+      <div v-if="shownTab === 'favorites' || shownTab === 'past' || shownTab === 'future' "><!-- for the lists-->
         <br>
-        <div>
-          <button v-if="!showingMovie" @click="showFavLists(1,'movie')">Change to Movies lists</button>
-          &nbsp;
-          <button v-if="showingMovie" @click="showFavLists(1,'tv')">Change to TV lists</button>
-          <br>
-        </div>
+        <button v-if="!showingMovie" @click="togggleShowingMovie()">Change to Movies lists</button>
+        &nbsp;
+        <button v-if="showingMovie" @click="togggleShowingMovie()">Change to TV lists</button>
+        <br>
       </div>
     
-      <br><br>
+      <br>
     </div>
    
   </div>
@@ -243,9 +243,8 @@
           and <input type="num" v-model="secondYear">
 
           <br><br>
-          <button @click="randomGood">Random Good Shows</button>&nbsp;
-          <button @click="abRandom">Absoultely Random Shows</button>&nbsp;
-          <button @click="adRandom" v-if="currentUser.displayName === 'nisino25'">Adult Shows</button>
+          <button @click="randomGood">Random Search</button>&nbsp;
+          <button @click="adRandom" v-if="currentUser.displayName === 'nisino25' && showingMovie">Adult movies</button>
 
       </div>
     </div>
@@ -364,35 +363,68 @@
                   </div>
                 </li>
 
-                <div><!--toggle button-->
-                  <li v-if="tabMovieSelected">
-                      <div v-if="result.adult">
-                        <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
-                        <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Check this on Google<br><br></a>
-                      </div>
-                      <div v-else>
-                        <a v-bind:href="'https://www.themoviedb.org/movie/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
-                        <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Google<br><br></a>
-                      </div>
-                  </li>
-                  <li v-if="!tabMovieSelected">
-                      <div v-if="result.adult">
-                        <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
-                        <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Check this on Google<br><br></a>
-                      </div>
-                      <div v-else>
-                        <a v-bind:href="'https://www.themoviedb.org/tv/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
-                        <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Google<br><br></a>
-                      </div>
-                  </li>
-                  <li v-if="showingMovie">
-                    <button v-if="isLoggedIn && !(!!this.favLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Add to Favorite <br></button>
-                    <button v-if="isLoggedIn && (!!this.favLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Remove from  Favorite<br></button> 
-                  </li>
-                  <li v-if="!showingMovie">
-                    <button v-if="isLoggedIn && !(!!this.favTvLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Add to Favorite TV <br></button>
-                    <button v-if="isLoggedIn && (!!this.favTvLists[result.id])" @click="toggleFavorite(result.id)" style="width:60px;height:60px;" >Remove from Favorite TV<br></button> 
-                  </li>
+                <div><!--button -->
+                  <div><!-- link -->
+                    <li v-if="tabMovieSelected">
+                        <div v-if="result.adult">
+                          <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
+                          <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Check this on Google<br><br></a>
+                        </div>
+                        <div v-else>
+                          <a v-bind:href="'https://www.themoviedb.org/movie/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
+                          <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Google<br><br></a>
+                        </div>
+                    </li>
+                    <li v-if="!tabMovieSelected">
+                        <div v-if="result.adult">
+                          <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
+                          <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Check this on Google<br><br></a>
+                        </div>
+                        <div v-else>
+                          <a v-bind:href="'https://www.themoviedb.org/tv/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
+                          <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Google<br><br></a>
+                        </div>
+                    </li>
+                  </div>
+                
+                  <div> <!-- toggle button-->
+                    <div v-if="showingMovie">
+                      <button v-if="isLoggedIn && !(!!MFaLists[result.id])" @click="toggleLists(result.id,'favorite')"  class="favButton" >Favorite<br></button>
+                      <button v-if="isLoggedIn && (!!MFaLists[result.id])" @click="toggleLists(result.id,'favorite')" class="notfavButton">Favorite<br></button> &nbsp;
+
+                      <button v-if="isLoggedIn && !(!!MPaLists[result.id]) &&!(!!MFaLists[result.id])" @click="toggleLists(result.id,'past')" class="pastButton" >Watched Before<br></button>
+                      <button v-if="isLoggedIn && (!!MPaLists[result.id]) &&!(!!MFaLists[result.id])" @click="toggleLists(result.id,'past')" class="notpastButton">Watched before  <br></button> &nbsp;
+                      <button v-if="isLoggedIn && (!!MFaLists[result.id])" @click="toggleLists(result.id,'past', true)" class="notpastButton">Watched before <br></button> &nbsp;
+
+                      <button v-if="isLoggedIn && !(!!MFuLists[result.id]) &&!(!!MPaLists[result.id])" @click="toggleLists(result.id,'future')" class="futureButton" >Watch Later<br></button>
+                      <button v-if="isLoggedIn && (!!MFuLists[result.id])" @click="toggleLists(result.id,'future')" class="notfutureButton">Watch Later<br></button>
+                      <button v-if="isLoggedIn && (!!MPaLists[result.id])" @click="toggleLists(result.id,'future',true)" class="futureButton">Watch Later<br></button>
+                       &nbsp;
+
+
+
+                    </div>
+                    <div v-if="!showingMovie">
+                      <button v-if="isLoggedIn && !(!!TFaLists[result.id])" @click="toggleLists(result.id,'favorite')"  class="favButton" >Favorite<br></button>
+                      <button v-if="isLoggedIn && (!!TFaLists[result.id])" @click="toggleLists(result.id,'favorite')" class="notfavButton">Favorite<br></button> &nbsp;
+
+                      <button v-if="isLoggedIn && !(!!TPaLists[result.id]) &&!(!!TFaLists[result.id])" @click="toggleLists(result.id,'past')" class="pastButton" >Watched Before <br></button>
+                      <button v-if="isLoggedIn && (!!TPaLists[result.id]) &&!(!!TFaLists[result.id])" @click="toggleLists(result.id,'past')" class="notpastButton">Watched before  <br></button> &nbsp;
+                      <button v-if="isLoggedIn && (!!TFaLists[result.id])" @click="toggleLists(result.id,'past', true)" class="notpastButton">Watched before <br></button> &nbsp;
+
+                      <button v-if="isLoggedIn && !(!!TFuLists[result.id]) &&!(!!TPaLists[result.id])" @click="toggleLists(result.id,'future')" class="futureButton" >Watch Later 1<br></button>
+                      <button v-if="isLoggedIn && (!!TFuLists[result.id])" @click="toggleLists(result.id,'future')" class="notfutureButton">Watch Later2<br></button> &nbsp;
+                      <button v-if="isLoggedIn && (!!TPaLists[result.id])" @click="toggleLists(result.id,'future',true)" class="futureButton">Watch Later3<br></button>
+                      <br>
+                      <strong v-if="TFaLists[result.id]">fav o</strong>
+                      <strong v-else>fav x</strong>&nbsp;
+                      <strong v-if="TPaLists[result.id]">past o</strong>
+                      <strong v-else>past x</strong>&nbsp;
+                      <strong v-if="TFuLists[result.id]">future o</strong>
+                      <strong v-else>future x</strong>&nbsp;
+                    </div>
+                  </div>
+
                 </div>
 
                 <li >
@@ -555,7 +587,7 @@ export default defineComponent( {
 
 
       favoriteData: {},
-      updatedMovieLists: [],
+
       favLists: '',
       favMovieCount: 0,
       CountedAlredy: false,
@@ -596,6 +628,7 @@ export default defineComponent( {
       specificIndex: 20,
 
       rememberME: true,
+      remMe: true,
       remFirst: null,
       remSecond: null,
 
@@ -608,6 +641,54 @@ export default defineComponent( {
       adCheck: false,
       absCount: 0,
       JaCounter: 0,
+
+      listLoopCount: 0,
+      fireFolder: null,
+      updatedLists: null,
+      roundUpRep: null,
+      countRep: 0,
+
+
+      updatedMFaLists: [], 
+      updatedMPaLists: [],
+      updatedMFuLists: [],
+      updatedTFaLists: [],
+      updatedTPaLists: [],
+      updatedTFuLists: [],
+
+      MFaLists: [], 
+      MPaLists: [],
+      MFuLists: [],
+      TFaLists: [],
+      TPaLists: [],
+      TFuLists: [],
+
+      roundUpMFa: null,
+      roundUpMPa: null,
+      roundUpMFu: null,
+      roundUpTFa: null,
+      roundUpTPa: null,
+      roundUpTFu: null,
+
+      MFaCount: 0,
+      MPaCount: 0,
+      MFuCount: 0,
+      TFaCount: 0,
+      TPaCount: 0,
+      TFuCount: 0,
+
+      refMFa: null,
+      refMPa: null,
+      refMFu: null,
+      refTFa: null,
+      refTPa: null,
+      refTFu: null,
+
+      shownLists: null,
+      firstApi: null,
+      secondApi: null,
+      shownType: null,
+      
 
 
     }
@@ -655,6 +736,7 @@ export default defineComponent( {
         this.tvHit = 0,
         this.ShowRandom = false,
         this.countForLoop = 0;
+        this.shownLists=  'favorites',
 
         // this.firstYear = 1995
         
@@ -670,12 +752,15 @@ export default defineComponent( {
     changeTab(page){
       this.resetResult();
       this.shownTab = page
-      if(page === 'myFavLists'){
-        if(this.favMovieCount !== 0){
-          this.showFavLists(1,'movie')
-        }else{
-          this.showFavLists(1,'tv')
-        }
+      if(page === 'favorites'){
+        this.showLists(1,'favorites')
+
+      }else if(page === 'past'){
+        this.showLists(1,'past')
+
+      }else if(page === 'future'){
+        this.showLists(1,'future')
+
       }
       
       
@@ -777,85 +862,165 @@ export default defineComponent( {
       // console.log(this.results)
       this.condition = 'randomSuccess'
     },
+
     async idCheck(movieId){
       console.log(this.favLists)
       console.log(`Checking:${movieId}`)
-      // if(!!this.updatedMovieLists[id]){
-      //   console.log('yes')
+      // if(!!this.updatedMovieFavoriteList //   console.log('yes')
       // }else{
       //   console.log('no')
       // }
       console.log(!!this.favLists[movieId])
     },
-    async getLists() {
+    async getLists(){
       this.decades = false
-      this.CountedAlredy = true;
+      
       this.favMovieCount = 0;
       this.favTvCount = 0;
 
-      var docRefMovie = db.collection("userMovieFavorites").doc(this.currentUser.uid)
-      docRefMovie.get().then((doc) => {
-          if (doc.exists) {
-            this.favLists = doc.data()
-            // console.log(doc.data())
+      this.roundUpMFa= null
+      this.roundUpMPa= null
+      this.roundUpMFu= null
+      this.roundUpTFa= null
+      this.roundUpTPa= null
+      this.roundUpTFu= null
 
-
-            this.updatedMovieLists = []
-            let i = 0;
-            
-            // console.log(this.favLists)
-            for (i in this.favLists){
-              if(this.favLists[i]) {
-                this.updatedMovieLists[this.favMovieCount] = i
-                this.favMovieCount ++;
-                // console.log(this.updatedMovieLists[this.favMovieCount - 1])
-              } 
-            }
-            this.roundUpPAge = Math.ceil(this.updatedMovieLists.length /20)
-          } else {
-            console.log("No such document!");
-          }
-
-      }).catch((error) => {
-        console.log("Error getting document:", error);
-      });
-
-
-      var docRefTv = db.collection("userTvFavorites").doc(this.currentUser.uid)
-      docRefTv.get().then((doc) => {
-          if (doc.exists) {
-            this.favTvLists = doc.data()
-
-            this.updatedTvLists= []
-            let i = 0;
-            
-            // console.log(this.favLists)
-            for (i in this.favTvLists){
-              if(this.favTvLists[i]) {
-                this.updatedTvLists[this.favTvCount] = i
-                this.favTvCount ++;
-                // console.log(this.updatedMovieLists[this.favMovieCount - 1])
-              } 
-            }
-            this.roundUpPAgeTv = Math.ceil(this.updatedTvLists.length /20)
-          } else {
-            console.log("No such document!");
-          }
-
-      }).catch((error) => {
-        console.log("Error getting document:", error);
-      });
-    },
-    async showFavLists(page,type){
-
-      if(this.favMovieCount === 0 && this.favTvCount === 0)
-        return;
+      this.MFaCount= 0
+      this.MPaCount= 0
+      this.MFuCount =0
+      this.TFaCount= 0
+      this.TPaCount= 0
+      this.TFuCount= 0
       
-      if(type === 'movie'){
-        this.showingMovie = true;
-      }else{
-        this.showingMovie = false;
-      }
+      // 1
+      this.refMFa = db.collection("userMovieFavorites").doc(this.currentUser.uid)
+      this.refMFa.get().then((doc) => {
+        if (doc.exists) {
+          this.MFaLists = doc.data()
+          this.updatedMFaLists = []
+          let i = 0;
+          for (i in this.MFaLists){
+            if(this.MFaLists[i]) {
+              this.updatedMFaLists[this.MFaCount] = i
+              this.MFaCount ++;
+            } 
+          }
+          this.roundUpMFa = Math.ceil(this.updatedMFaLists.length /20)
+        }
+      });
+
+
+      // 2
+      this.refMPa = db.collection("userMoviePast").doc(this.currentUser.uid)
+      this.refMPa.get().then((doc) => {
+        if (doc.exists) {
+          this.MPaLists = doc.data()
+          // this.favLists = this.
+          this.updatedMPaLists = []
+          let i = 0;
+          for (i in this.MPaLists){
+            if(this.MPaLists[i]) {
+              this.updatedMPaLists[this.MPaCount] = i
+              this.MPaCount ++;
+            } 
+          }
+          this.roundUpMPa = Math.ceil(this.updatedMPaLists.length /20)
+        }
+      });
+
+      // 3
+      this.refMFu = db.collection("userMovieFuture").doc(this.currentUser.uid)
+      this.refMFu.get().then((doc) => {
+        if (doc.exists) {
+          this.MFuLists = doc.data()
+          // this.favLists = this.MFuLists
+          this.updatedMFuLists = []
+          let i = 0;
+          for (i in this.MFuLists){
+            if(this.MFuLists[i]) {
+              this.updatedMFuLists[this.MFuCount] = i
+              this.MFuCount ++;
+            } 
+          }
+          this.roundUpMFu = Math.ceil(this.updatedMFuLists.length /20)
+        } 
+        console.log(`count: ${this.MFuCount}`)
+      });
+
+      // 4
+      this.refTFa = db.collection("userTvFavorites").doc(this.currentUser.uid)
+      this.refTFa.get().then((doc) => {
+        if (doc.exists) {
+          this.TFaLists = doc.data()
+          // this.favLists = this.TFaLists
+          this.updatedTFaLists = []
+          let i = 0;
+          for (i in this.TFaLists){
+            if(this.TFaLists[i]) {
+              this.updatedTFaLists[this.TFaCount] = i
+              this.TFaCount ++;
+            } 
+          }
+          this.roundUpMPa = Math.ceil(this.updatedTFaLists.length /20)
+        } 
+      });
+
+      // 5
+      this.refTPa = db.collection("userTvPast").doc(this.currentUser.uid)
+      this.refTPa.get().then((doc) => {
+        if (doc.exists) {
+          this.TPaLists = doc.data()
+          // this.favLists = this.TPaLists
+          this.updatedTPaLists = []
+          let i = 0;
+          for (i in this.TPaLists){
+            if(this.TPaLists[i]) {
+              this.updatedTPaLists[this.TPaCount] = i
+              this.TPaCount ++;
+            } 
+          }
+          this.roundUpTPa = Math.ceil(this.updatedTPaLists.length /20)
+        }
+      });
+
+      // 6
+      this.refTFu = db.collection("userTvFuture").doc(this.currentUser.uid)
+      this.refTFu.get().then((doc) => {
+        if (doc.exists) {
+          this.TFuLists = doc.data()
+          // this.favLists = this.TFuLists
+          this.updatedLists = []
+          let i = 0;
+          for (i in this.TFuLists){
+            if(this.TFuLists[i]) {
+              this.updatedTFuLists[this.TFuCount] = i
+              this.TFuCount ++;
+            } 
+          }
+          this.roundUpTFu = Math.ceil(this.updatedTFuLists.length /20)
+        } 
+      });
+
+      
+
+
+      // console.log(this.MFaLists)
+      this.CountedAlredy = true;
+      
+      
+      
+      
+    },
+
+
+    async showLists(page,type){
+      console.log('jeuy')
+
+
+
+      this.rememberME = this.showingMovie
+      this.resetResult()
+      this.showingMovie = this.rememberME
 
       this.decades = false;
       this.pageForMyLists = true;
@@ -868,76 +1033,288 @@ export default defineComponent( {
       this.isImageLoaded = false
       this.condition = 'searching'
       this.isFetchingMovie = true
-      const query = this.query
       this.countCount = 0;
       let fakeLists = [];
       let maxForPage = 0;
+      this.shownType = type;
+
 
 
       if(this.showingMovie){
-        this.countCount = page*20 -20
-        const res = await fetch(`${this.firstPart}${this.updatedMovieLists[page*20 -20]}${this.secondePart}`)
-        const json = await res.json()
-        fakeLists = fakeLists.concat(json)
-        this.countCount ++
+        if(type === 'favorites'){
+          this.ApiURL = `${this.firstPart}${this.updatedMFaLists[page*20 -20]}${this.secondePart}`
+          this.countRep = this.MFaCount
+          this.shownLists = this.updatedMFaLists
 
-        if(page* 20 >= this.favMovieCount){
-          maxForPage = this.favMovieCount
-        }else{
-          maxForPage = page*20
-        }
-        console.log(`counconut: ${this.countCount}`)
-        console.log(`macforpage:${maxForPage}`)
+        }else if(type === 'past'){
+          this.ApiURL = `${this.firstPart}${this.updatedMPaLists[page*20 -20]}${this.secondePart}`
+          this.countRep = this.MPaCount
+          this.shownLists = this.updatedMPaLists
 
-        while(this.countCount < maxForPage){
-          const res = await fetch(`${this.firstPart}${this.updatedMovieLists[this.countCount]}${this.secondePart}`)
-          const json = await res.json()
-          fakeLists = fakeLists.concat(json)
-          this.countCount ++
-          console.log('hey2')
+        }else if(type === 'future'){
+          this.ApiURL = `${this.firstPart}${this.updatedMFuLists[page*20 -20]}${this.secondePart}`
+          this.countRep = this.MFuCount
+          this.shownLists = this.updatedMFuLists
+
         }
       }else{
-        this.countCount = page*20 -20
-        const res = await fetch(`https://api.themoviedb.org/3/tv/${this.updatedTvLists[page*20 -20]}${this.secondePart}`)
+        if(type === 'favorites'){
+          this.ApiURL = `https://api.themoviedb.org/3/tv/${this.updatedTFaLists[page*20 -20]}${this.secondePart}`
+          this.countRep = this.TFaCount
+          this.shownLists = this.updatedTFaLists
+
+        }else if(type === 'past'){
+          this.ApiURL = `https://api.themoviedb.org/3/tv/${this.updatedTPaLists[page*20 -20]}${this.secondePart}`
+          this.countRep = this.TPaCount
+          this.shownLists = this.updatedTPaLists
+
+        }else if(type === 'future'){
+          this.ApiURL = `https://api.themoviedb.org/3/tv/${this.updatedTFuLists[page*20 -20]}${this.secondePart}`
+          this.countRep = this.TFuCount
+          this.shownLists = this.updatedTFuLists
+          
+        }
+      }
+    
+      this.countCount = page*20 -20
+      const res = await fetch(this.ApiURL)
+      const json = await res.json()
+      fakeLists = fakeLists.concat(json)
+      this.countCount ++
+
+      if(page* 20 >= this. countRep){
+        maxForPage = this.countRep
+      }else{
+        maxForPage = page*20
+      }
+
+      console.log(`counconut: ${this.countCount}`)
+      console.log(`macforpage:${maxForPage}`)
+      while(this.countCount < maxForPage){
+        if(this.showingMovie){
+          this.ApiURL = `${this.firstPart}${this.shownLists[this.countCount]}${this.secondePart}`
+        }else{
+          this.ApiURL = `https://api.themoviedb.org/3/tv/${this.shownLists[this.countCount]}${this.secondePart}`
+        }
+        const res = await fetch(this.ApiURL)
         const json = await res.json()
         fakeLists = fakeLists.concat(json)
         this.countCount ++
-
-        if(page* 20 >= this.favTvCount){
-          maxForPage = this.favTvCount
-        }else{
-          maxForPage = page*20
-        }
-        console.log(`counconut: ${this.countCount}`)
-        console.log(`macforpage:${maxForPage}`)
-
-        while(this.countCount < maxForPage){
-          const res = await fetch(`https://api.themoviedb.org/3/tv/${this.updatedTvLists[this.countCount]}${this.secondePart}`)
-          const json = await res.json()
-          fakeLists = fakeLists.concat(json)
-          this.countCount ++
-          console.log('hey2')
-        }
+        console.log('hey2')
       }
-
+    
       this.isFetchingMovie = false
       this.condition = 'randomSuccess'
-      if (query !== this.query) {
-        await this.searchMovie()
-      }
-
       
 
       this.results= fakeLists
       this.movieHit = this.results.length
       this.tvHit = this.results.length
-
-      // let countFor = 0
-      // while( countFor < this.favMovieCount){
-      //   countFor++;
-      // }
-      console.log(this.movieHit)
     },
+
+    togggleShowingMovie(){
+      this.rememberME = this.showingMovie
+      this.resetResult();
+      this.showingMovie = !this.rememberME
+      this.showLists(1,this.shownType)
+
+    },
+
+
+    async toggleLists(contentId, kind, needConfirmation ){
+      if(needConfirmation){
+        let r= confirm('Are you sure you want to do that?');
+        if(!r){
+          return;
+        }
+      }
+
+      if(this.showingMovie){
+        if(kind === 'favorite'){
+          let docRef = db.collection('userMovieFavorites').doc(this.currentUser.uid)
+          console.log(contentId)
+          console.log('movie: fav')
+
+          let val = await docRef.get()
+          let favoriteData = val.exists ? val.data() : {}
+          favoriteData[contentId] = !favoriteData[contentId]
+          await docRef.set(favoriteData)
+
+          if(favoriteData[contentId]){
+            let docRef2 = db.collection('userMoviePast').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: past')
+            const val2 = await docRef2.get()
+            const favoriteData2 = val2.exists ? val2.data() : {}
+            favoriteData2[contentId] = true
+            await docRef2.set(favoriteData2)
+
+
+            let docRef3 = db.collection('userMovieFuture').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: future')
+            const val3 = await docRef3.get()
+            const favoriteData3 = val3.exists ? val3.data() : {}
+            favoriteData3[contentId] = false
+            await docRef3.set(favoriteData3)
+          }
+
+
+        }else if(kind === 'past'){
+          let docRef = db.collection('userMoviePast').doc(this.currentUser.uid)
+          console.log(contentId)
+          console.log('movie: past')
+
+          const val = await docRef.get()
+          const favoriteData = val.exists ? val.data() : {}
+          favoriteData[contentId] = !favoriteData[contentId]
+          await docRef.set(favoriteData)
+
+          if(favoriteData[contentId]){
+            let docRef3 = db.collection('userMovieFuture').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: future')
+            const val3 = await docRef3.get()
+            const favoriteData3 = val3.exists ? val3.data() : {}
+            favoriteData3[contentId] = false
+            await docRef3.set(favoriteData3)
+          }else{
+            let docRef2 = db.collection('userMovieFavorites').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: favs')
+            const val2 = await docRef2.get()
+            const favoriteData2 = val2.exists ? val2.data() : {}
+            favoriteData2[contentId] = false
+            await docRef2.set(favoriteData2)
+
+          }
+
+
+        }else if(kind === 'future'){
+          let docRef = db.collection('userMovieFuture').doc(this.currentUser.uid)
+          console.log(contentId)
+          console.log('movie: future')
+
+          const val = await docRef.get()
+          const favoriteData = val.exists ? val.data() : {}
+          favoriteData[contentId] = !favoriteData[contentId]
+          await docRef.set(favoriteData)
+
+          if(favoriteData[contentId]){
+            let docRef2 = db.collection('userMoviePast').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: past')
+            const val2 = await docRef2.get()
+            const favoriteData2 = val2.exists ? val2.data() : {}
+            favoriteData2[contentId] = false
+            await docRef2.set(favoriteData2)
+
+
+            let docRef3 = db.collection('userMovieFavorites').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: favs')
+            const val3 = await docRef3.get()
+            const favoriteData3 = val3.exists ? val3.data() : {}
+            favoriteData3[contentId] = false
+            await docRef3.set(favoriteData3)
+          }
+
+        }
+
+      }else{
+        if(kind === 'favorite'){
+          let docRef = db.collection('userTvFavorites').doc(this.currentUser.uid)
+          console.log(contentId)
+          // console.log('tv : fav')
+
+          const val = await docRef.get()
+          const favoriteData = val.exists ? val.data() : {}
+          favoriteData[contentId] = !favoriteData[contentId]
+          await docRef.set(favoriteData)
+
+          if(favoriteData[contentId]){
+            let docRef2 = db.collection('userTvPast').doc(this.currentUser.uid)
+            const val2 = await docRef2.get()
+            const favoriteData2 = val2.exists ? val2.data() : {}
+            favoriteData2[contentId] = true
+            await docRef2.set(favoriteData2)
+
+
+            let docRef3 = db.collection('userTvFuture').doc(this.currentUser.uid)
+            const val3 = await docRef3.get()
+            const favoriteData3 = val3.exists ? val3.data() : {}
+            favoriteData3[contentId] = false
+            await docRef3.set(favoriteData3)
+          }
+
+        }else if(kind === 'past'){
+          let docRef = db.collection('userTvPast').doc(this.currentUser.uid)
+          console.log(contentId)
+          console.log('tv : past')
+
+          const val = await docRef.get()
+          const favoriteData = val.exists ? val.data() : {}
+          favoriteData[contentId] = !favoriteData[contentId]
+          await docRef.set(favoriteData)
+
+          if(favoriteData[contentId]){
+            let docRef3 = db.collection('userTvFuture').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: future')
+            const val3 = await docRef3.get()
+            const favoriteData3 = val3.exists ? val3.data() : {}
+            favoriteData3[contentId] = false
+            await docRef3.set(favoriteData3)
+          }else{
+            let docRef2 = db.collection('userTvFavorites').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: favs')
+            const val2 = await docRef2.get()
+            const favoriteData2 = val2.exists ? val2.data() : {}
+            favoriteData2[contentId] = false
+            await docRef2.set(favoriteData2)
+
+          }
+
+
+        }else if(kind === 'future'){
+          let docRef = db.collection('userTvFuture').doc(this.currentUser.uid)
+          console.log(contentId)
+          console.log('tv : future')
+
+          const val = await docRef.get()
+          const favoriteData = val.exists ? val.data() : {}
+          favoriteData[contentId] = !favoriteData[contentId]
+          await docRef.set(favoriteData)
+
+          if(favoriteData[contentId]){
+            let docRef2 = db.collection('userTvPast').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: past')
+            const val2 = await docRef2.get()
+            const favoriteData2 = val2.exists ? val2.data() : {}
+            favoriteData2[contentId] = false
+            await docRef2.set(favoriteData2)
+
+
+            let docRef3 = db.collection('userTvFavorites').doc(this.currentUser.uid)
+            // console.log(contentId)
+            console.log('movie: favs')
+            const val3 = await docRef3.get()
+            const favoriteData3 = val3.exists ? val3.data() : {}
+            favoriteData3[contentId] = false
+            await docRef3.set(favoriteData3)
+          }
+
+          
+        }
+
+      }
+
+      this.getLists()
+      // console.log(`${this.MFaLists[contentId]}, ${this.MPaLists[contentId]}, ${this.MFuLists[contentId]}`)
+    },
+
     async toggleFavorite(contentId) {
       console.log('trying..')
       if (!this.currentUser) return
@@ -1163,12 +1540,19 @@ export default defineComponent( {
       console.log(`I tried: ${this.count} times`)
       this.isFetchingMovie = false; 
     },
+
     toggleRandom(){
+      console.log(`1: ${this.showingMovie}`)
+      this.rememberME = this.ShowRandom
+      this.remMe = this.showingMovie
       this.resetResult();
-      this.ShowRandom = !this.ShowRandom
+      this.ShowRandom = !this.rememberME
+      this.showingMovie = this.remMe
+      console.log(`2: ${this.showingMovie}`)
     },
 
     async randomGood(){
+      // console.log(this.showingMovie)
       this.decades = true;
       this.pageForMyLists = false;
       this.multipleYears = true;
@@ -1279,6 +1663,7 @@ export default defineComponent( {
       }
       this.isFetchingMovie = false
       this.condition = 'randomSuccess'
+      // console.log(this.showingMovie)
     },
     async abRandom(){
     },
@@ -1312,7 +1697,6 @@ export default defineComponent( {
         this.WithoutDate = `https://api.themoviedb.org/3/discover/movie?api_key=3019330967bc149f12628b6c43bd5a32&sort_by=popularity.desc&&include_adult=true&include_video=false`
       }else{
         this.WithoutDate = `https://api.themoviedb.org/3/discover/tv?api_key=3019330967bc149f12628b6c43bd5a32&language=en-US&sort_by=popularity.desc&include_video=false&page=1`
-        
       }
       if(this.showingMovie){
         this.ApiURL = `${this.WithoutDate}&primary_release_year=${this.secondYear}`
@@ -1379,8 +1763,7 @@ export default defineComponent( {
           this.ApiURL = `https://api.themoviedb.org/3/discover/movie?api_key=3019330967bc149f12628b6c43bd5a32&language=en-US&sort_by=popularity.desc&include_adult=true&include_video=false&primary_release_year=${this.specificYear}&page=${this.page}`
           //                  https://api.themoviedb.org/3/discover/movie?api_key=3019330967bc149f12628b6c43bd5a32&language=en-US&sort_by=popularity.desc&include_adult=true&include_video=false&page=1
         }else{
-          this.ApiURL = `https://api.themoviedb.org/3/discover/tv?api_key=3019330967bc149f12628b6c43bd5a32&&sort_by=popularity.desc&include_video=false&timezone=America%2FNew_York&include_null_first_air_dates=false&include_adult=true&first_air_date_year=${this.specificYear}&page=${this.page}`
-          
+          this.ApiURL = `https://api.themoviedb.org/3/discover/tv?api_key=3019330967bc149f12628b6c43bd5a32&&sort_by=popularity.desc&timezone=America%2FNew_York&include_null_first_air_dates=false&include_adult=true&first_air_date_year=${this.specificYear}&page=${this.page}`
         }
 
         // if(this.showingMovie){
@@ -1395,7 +1778,7 @@ export default defineComponent( {
 
         console.log(`${this.specificYear}, p:${this.page} abs:${this.absCount} got ${this.countForLoop} movies`)
         
-
+        console.log(json.results)
         this.JaCounter = 0;
         while(this.JaCounter < 20){
           if(json.results[this.JaCounter].adult && json.results[this.JaCounter].poster_path !== null){
@@ -1425,10 +1808,6 @@ export default defineComponent( {
       console.log(this.results)
 
     },
-    testLoop(){
-      this.countForLoop = 0
-      this.JaCounter = 0
-    }
   },
   watch: {
     async query(val) {
@@ -1444,6 +1823,15 @@ export default defineComponent( {
 </script>
 
 <style>
+
+
+
+
+
+
+
+
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -1480,4 +1868,123 @@ li{
   margin-right: 200px;
   margin-left: 200px;
 }
+
+
+.favButton {
+	background:	white;
+  border-color: #FFD700;
+  border-radius:28px;
+  font-size:17px;
+	padding:10px 20px;
+  border-width: thick;
+
+}
+.favButton:active {
+	position:relative;
+	top:1px;
+}
+
+.notfavButton {
+	background:	#FFD700;
+  border-color: grey;
+  border-radius:28px;
+  font-size:17px;
+	padding:10px 20px;
+  border-width: thick;
+}
+.notfavButton:active {
+	position:relative;
+	top:1px;
+}
+
+
+
+.pastButton {
+	background:	white;
+  border-color: #32CD32;
+  border-radius:28px;
+  font-size:17px;
+	padding:10px 20px;
+  border-width: thick;
+
+}
+.pastButton:active {
+	position:relative;
+	top:1px;
+}
+
+.notpastButton {
+	background:	#32CD32;
+  border-color: grey;
+  border-radius:28px;
+  font-size:17px;
+	padding:10px 20px;
+  border-width: thick;
+}
+.notpastButton:active {
+	position:relative;
+	top:1px;
+}
+
+
+
+
+.futureButton {
+	background:	white;
+  border-color: 	#FF0000;
+  border-radius:28px;
+  font-size:17px;
+	padding:10px 20px;
+  border-width: thick;
+
+}
+.futureButton:active {
+	position:relative;
+	top:1px;
+}
+
+.notfutureButton {
+	background:		#FF0000;
+  border-color: grey;
+  border-radius:28px;
+  font-size:17px;
+	padding:10px 20px;
+  border-width: thick;
+  color: white;
+}
+.notfutureButton:active {
+	position:relative;
+	top:1px;
+}
+
+.confirmfutureButton {
+  background:	grey;
+  border-color: 	#FF0000;
+  border-radius:28px;
+  font-size:17px;
+	padding:10px 20px;
+  border-width: thick;
+  
+}
+
+.confirmfutureButton:active {
+	position:relative;
+	top:1px;
+}
+
+/* 
+.movie-blue{
+  color: blue
+}
+
+.tv-green{
+  color: green
+}
+
+.total-red{
+  color: red
+} */
+
+
+
 </style>
