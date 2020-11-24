@@ -45,7 +45,9 @@
         <button v-if="!showingMovie" @click="togggleShowingMovie()">Change to Movies lists</button>
         &nbsp;
         <button v-if="showingMovie" @click="togggleShowingMovie()">Change to TV lists</button>
-        <br>
+        &nbsp;
+        <button @click="toggleSimplify" v-if="!simplifyNeeded">Show Simplifed Lists</button>
+        <button @click="toggleSimplify" v-else>Hide Simplifed Lists</button>
       </div>
     
       <br>
@@ -206,6 +208,7 @@
                 <option value="ko">Korean</option>
                 <option value="0">All languages</option>
               </select> &nbsp;
+              <button @click="seletAnime">Anime?</button> &nbsp;
               <button @click="resetChoices">Reset </button>
 
             </div>
@@ -234,6 +237,7 @@
               <option value="ko">Korean</option>
               <option value="0">All languages</option>
             </select> &nbsp;
+            <button @click="seletAnime">Anime?</button> &nbsp;
             <button @click="resetChoices">Reset </button>
 
             </div>
@@ -256,16 +260,80 @@
       
       <div class="reusult" v-if="!(paginationNeeded)|| (paginationNeeded && movieHit !==0 )">
         <!-- <div class="reusult" v-if="!(paginationNeeded)"> -->
+        
+        <div v-if="
+            (showingMovie && shownTab === 'favorites' && MFaCount === 0) || 
+            (showingMovie && shownTab === 'past' && MPaCount === 0) || 
+            (showingMovie && shownTab === 'future' && MFuCount === 0) || 
+            (!showingMovie && shownTab === 'favorites' && TFaCount === 0) || 
+            (!showingMovie && shownTab === 'past' && TPaCount === 0) || 
+            (!showingMovie && shownTab === 'future' && TMFuCount === 0) 
+          ">
+        </div>
+        <div v-else>
+          <strong class="title" v-if="movieHit > 0 && showingMovie">Showing {{ (showingPage * 20) - 19 }} - {{ (showingPage * 20) - 20 + movieHit }}
+            <strong v-if="shownTab === 'searching'"> Movies</strong>
+            <strong v-if="shownTab=== 'favorites' "> of {{MFaCount}} Movies</strong>
+            <strong v-if="shownTab=== 'past' "> of {{MPaCount}} Movies</strong>
+            <strong v-if="shownTab=== 'future' "> of {{MFuCount}} Movies</strong>
+          </strong>
 
-        <strong class="title" v-if="movieHit > 0 && showingMovie">Showing {{ (showingPage * 20) - 19 }} - {{ (showingPage * 20) - 20 + movieHit }}
-          <strong v-if="shownTab=== 'myFavLists' "> of {{favMovieCount}} movies</strong>
-        </strong>
+          <strong class="title" v-if="movieHit > 0 && !showingMovie">Showing {{ (showingPage * 20) - 19 }} - {{ (showingPage * 20) - 20 + movieHit }}
+            <strong v-if="shownTab === 'searching'"> TV Shows</strong>
+            <strong v-if="shownTab=== 'favorites' "> of {{TFaCount}} TV Shows</strong>
+            <strong v-if="shownTab=== 'past' "> of {{TPaCount}} TV Shows</strong>
+            <strong v-if="shownTab=== 'future' "> of {{TFuCount}} TV Shows</strong>
+          </strong>
 
-        <strong class="title" v-if="movieHit > 0 && !showingMovie">Showing {{ (showingPage * 20) - 19 }} - {{ (showingPage * 20) - 20 + movieHit }}
-          <strong v-if="shownTab=== 'myFavLists' "> of {{favTvCount}}</strong> TV shows
-        </strong>
 
-        <div v-if="showingYear !== 0">
+          <div v-if="shownTab === 'favorites' || shownTab === 'past' || shownTab === 'future'"><!-- Pagination for lists-->
+            
+            <div v-if="showingMovie && shownTab === 'favorites'">
+              <button class="pagenation" v-for="index in roundUpMFa" :key="index"  @click="showLists(index,'favorites')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="showingMovie && shownTab === 'past'">
+              <button class="pagenation" v-for="index in roundUpMPa" :key="index"  @click="showLists(index,'past')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="showingMovie && shownTab === 'future'">
+              <button class="pagenation" v-for="index in roundUpMFu" :key="index"  @click="showLists(index,'future')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+
+
+            <div v-if="!showingMovie && shownTab === 'favorites'">
+              <button class="pagenation" v-for="index in roundUpTFa" :key="index"  @click="showLists(index,'favorites')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="!showingMovie && shownTab === 'past'">
+              <button class="pagenation" v-for="index in roundUpTPa" :key="index"  @click="showLists(index,'past')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="!showingMovie && shownTab === 'future'">
+              <button class="pagenation" v-for="index in roundUpTFu" :key="index"  @click="showLists(index,'future')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+
+
+          </div>
+
+        </div>
+
+
+        <div v-if="showingYear !== 0"><!-- go to next year-->
           <button @click="changeingYear(parseInt(contentYear)-1)" v-if="movieHit > 0">{{parseInt(contentYear)-1}}</button>&nbsp;
           <strong class="title" v-if="movieHit > 0">from {{contentYear}}</strong>&nbsp;
           <button @click="changeingYear(parseInt(contentYear)+1)" v-if="movieHit > 0">{{parseInt(contentYear) +1}}</button>
@@ -291,6 +359,8 @@
     </div>
 
 
+
+    
     <div  v-if="this.multipleContents"><!-- showing results--> 
       <br>
 
@@ -318,146 +388,201 @@
         
       </div>
 
-      <div v-for="(result, i) in results" :key="i">
+      
+
+      
+
+      <div v-if="
+            (showingMovie && shownTab === 'favorites' && MFaCount === 0) || 
+            (showingMovie && shownTab === 'past' && MPaCount === 0) || 
+            (showingMovie && shownTab === 'future' && MFuCount === 0) || 
+            (!showingMovie && shownTab === 'favorites' && TFaCount === 0) || 
+            (!showingMovie && shownTab === 'past' && TPaCount === 0) || 
+            (!showingMovie && shownTab === 'future' && TMFuCount === 0) 
+          ">
+      </div>
+
+      <table v-if="simplifyNeeded" ><!-- simplifytable -->
+        <tr>
+          <th>No.</th>
+          <th>Title</th>
+          <th>Country</th>
+        </tr>
+        <tr v-for="(result, i) in results" :key="i">
+          <td v-if="!(multipleYears)" class="minutes">{{i + (showingPage * 20 -19) }} </td>
+          <td v-if="showingMovie"> {{ result.original_title }}</td>
+          <td v-else>{{result.original_name}} </td>
+          <td>{{result.original_language}}</td>
+        </tr>
+      </table>
+      <div  v-else v-for="(result, i) in results" :key="i">
         
         <div v-if="(i >= 20 && multipleYears) || !multipleYears ">
+          
         
           <hr v-if="condition === 'randomSuccess'">
+
           
-          <div v-if="!(results.poster_path === '')">
-            <div v-if="condition !== 'error'">  
-              <!-- <li v-for="(result, i) in results" :key="i"> -->
-                
-              <ul >
-                <li > <!-- title -->
-                  <div v-if="showingMovie" class="reusult" >
-                    <div v-if="!ShowRandom">
-                      <strong v-if="!(multipleYears)" class="minutes">{{i + (showingPage * 20 -19) }}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_title }} </strong>
-                      <strong v-if="multipleYears && !decades" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears && !decades"> {{ result.original_title }} </strong>
-                      <strong v-if="multipleYears && decades && (i-19) %  10 !==0 " class="minutes">{{result.release_date.substring(0,4)}}: NO.{{(i-19) %  10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 !==0 " >  {{ result.original_title }} </strong>
-                      <strong v-if="multipleYears && decades && (i-19) %  10 ===0" class="minutes">{{result.release_date.substring(0,4)}}: NO.{{10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 ===0" >  {{ result.original_title }} </strong>
+          <div>
+            <div v-if="!(results.poster_path === '')">
+              <div v-if="condition !== 'error'">  
+                <!-- <li v-for="(result, i) in results" :key="i"> -->
+                  
+                <ul >
+                  <div > <!-- title -->
+                    <div v-if="showingMovie" class="reusult" >
+                      <div v-if="!ShowRandom">
+                        <strong v-if="!(multipleYears)" class="minutes">{{i + (showingPage * 20 -19) }}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_title }} </strong>
+                        <strong v-if="multipleYears && !decades" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears && !decades"> {{ result.original_title }} </strong>
+                        <strong v-if="multipleYears && decades && (i-19) %  10 !==0 " class="minutes">{{result.release_date.substring(0,4)}}: NO.{{(i-19) %  10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 !==0 " >  {{ result.original_title }} </strong>
+                        <strong v-if="multipleYears && decades && (i-19) %  10 ===0" class="minutes">{{result.release_date.substring(0,4)}}: NO.{{10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 ===0" >  {{ result.original_title }} </strong>
+                      </div>
+
+                      <div v-else>
+                        <strong>{{i -19}}. </strong>&nbsp;
+                        <strong class="minutes">NO.{{rankingLists[i-20].rank}} from {{rankingLists[i-20].year}}</strong><br>
+                        <!-- <strong>---{{i}}---</strong> -->
+                        <strong>  {{ result.original_title}} </strong>
+                      </div>
+                    </div>
+                    
+
+                    <div v-if="!showingMovie">
+                      <div v-if="!ShowRandom">
+                        <strong v-if="!(multipleYears)" class="minutes">{{i+ (showingPage * 20 -19) }}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_name }}</strong>
+                        <strong v-if="multipleYears && !decades" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears && !decades"> {{ result.original_name }} </strong>
+                        <strong v-if="multipleYears && decades && (i-19) %  10 !==0 " class="minutes">{{result.first_air_date.substring(0,4)}}: NO.{{(i-19) %  10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 !==0 " >  {{ result.original_name }} </strong>
+                        <strong v-if="multipleYears && decades && (i-19) %  10 ===0" class="minutes">{{result.first_air_date.substring(0,4)}}: NO.{{10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 ===0" >  {{ result.original_name }} </strong>
+                      </div>
+                      <div v-else>
+                        <strong>{{i -19}}. </strong>&nbsp;
+                        <strong class="minutes">NO.{{rankingLists[i-20].rank}} from {{rankingLists[i-20].year}}</strong><br>
+                        <!-- <strong>---{{i}}---</strong> -->
+                        <strong>  {{ result.original_name}} </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div><!-- date and detail button -->
+                    <div class="reusult">
+                      <strong class="minutes" v-if="showingMovie">{{ result.release_date }}</strong>
+                      <strong class="minutes" v-if="!showingMovie">{{ result.first_air_date }}</strong>
+                    
+                      &nbsp;
+
+                      <button v-if="!detailNeeded" @click="toggleDetail">+ detail</button>
+                      <button v-if="detailNeeded" @click="toggleDetail">- detail</button>
+
+                    </div>
+                  </div>
+
+                  <div v-if="detailNeeded"><!-- link -->
+                      <br>
+                      <div v-if="tabMovieSelected">
+                          <div v-if="result.adult">
+                            <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
+                            <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Check this on Google<br></a>
+                          </div>
+                          <div v-else>
+                            <a v-bind:href="'https://www.themoviedb.org/movie/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
+                            <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Google<br></a>
+                          </div>
+                      </div>
+                      <div v-if="!tabMovieSelected">
+                          <div v-if="result.adult">
+                            <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
+                            <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Check this on Google<br></a>
+                          </div>
+                          <div v-else>
+                            <a v-bind:href="'https://www.themoviedb.org/tv/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
+                            <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Google<br></a>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div><!--toggle button -->
+                    
+                    <div v-if="!changingLists"> <!-- button-->
+                      <br>
+                      <div v-if="showingMovie">
+                        <button v-if="isLoggedIn && !(!!MFaLists[result.id])" @click="toggleLists(result.id,'favorite')"  class="favButton" >Favorite<br></button>
+                        <button v-if="isLoggedIn && (!!MFaLists[result.id])" @click="toggleLists(result.id,'favorite')" class="notfavButton">Favorite<br></button> &nbsp;
+
+                        <button v-if="isLoggedIn && !(!!MPaLists[result.id]) &&!(!!MFaLists[result.id])" @click="toggleLists(result.id,'past')" class="pastButton" >Watched Before<br></button>
+                        <button v-if="isLoggedIn && (!!MPaLists[result.id]) &&!(!!MFaLists[result.id])" @click="toggleLists(result.id,'past')" class="notpastButton">Watched before  <br></button>
+                        <button v-if="isLoggedIn && (!!MFaLists[result.id])" @click="toggleLists(result.id,'past', true)" class="notpastButton">Watched before <br></button> &nbsp;
+
+                        <button v-if="isLoggedIn && !(!!MFuLists[result.id]) &&!(!!MPaLists[result.id])" @click="toggleLists(result.id,'future')" class="futureButton" >Watch Later<br></button>
+                        <button v-if="isLoggedIn && (!!MFuLists[result.id])" @click="toggleLists(result.id,'future')" class="notfutureButton">Watch Later<br></button>
+                        <button v-if="isLoggedIn && (!!MPaLists[result.id])" @click="toggleLists(result.id,'future',true)" class="futureButton">Watch Later<br></button>
+                        &nbsp;
+
+
+
+                      </div>
+                      <div v-if="!showingMovie">
+                        <button v-if="isLoggedIn && !(!!TFaLists[result.id])" @click="toggleLists(result.id,'favorite')"  class="favButton" >Favorite<br></button>
+                        <button v-if="isLoggedIn && (!!TFaLists[result.id])" @click="toggleLists(result.id,'favorite')" class="notfavButton">Favorite<br></button> &nbsp;
+
+                        <button v-if="isLoggedIn && !(!!TPaLists[result.id]) &&!(!!TFaLists[result.id])" @click="toggleLists(result.id,'past')" class="pastButton" >Watched Before <br></button>
+                        <button v-if="isLoggedIn && (!!TPaLists[result.id]) &&!(!!TFaLists[result.id])" @click="toggleLists(result.id,'past')" class="notpastButton">Watched before  <br></button> 
+                        <button v-if="isLoggedIn && (!!TFaLists[result.id])" @click="toggleLists(result.id,'past', true)" class="notpastButton">Watched before <br></button> &nbsp;
+
+                        <button v-if="isLoggedIn && !(!!TFuLists[result.id]) &&!(!!TPaLists[result.id])" @click="toggleLists(result.id,'future')" class="futureButton" >Watch Later<br></button>
+                        <button v-if="isLoggedIn && (!!TFuLists[result.id])" @click="toggleLists(result.id,'future')" class="notfutureButton">Watch Later<br></button>
+                        <button v-if="isLoggedIn && (!!TPaLists[result.id])" @click="toggleLists(result.id,'future',true)" class="futureButton">Watch Later<br></button>
+                      </div>
+                    </div>
+                    <div v-else>
+                      <div v-if="!(result.poster_path === null)">
+                        <img src="https://media3.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" alt=""  >
+                      </div>
                     </div>
 
-                    <div v-else>
-                      <strong>{{i -19}}. </strong>&nbsp;
-                      <strong class="minutes">NO.{{rankingLists[i-20].rank}} from {{rankingLists[i-20].year}}</strong><br>
-                      <!-- <strong>---{{i}}---</strong> -->
-                      <strong>  {{ result.original_title}} </strong>
+                  </div>
+
+                  <div v-if="detailNeeded"><!--Rating and popularitu -->
+                    <div>
+                      <div class="reusult">
+                        <div class="title" v-if="result.vote_average !== 0">Rating: {{ result.vote_average }}</div>
+                        <div class="title" v-else>No data </div>
+                      </div>
                     </div>
+                    <div>
+                      <div class="reusult">
+                        <div class="title" v-if="result.popularity !== null || result.popularity === 0">Popularity: {{ result.popularity }}</div>
+                      </div>
+                    </div>
+                    
+
                   </div>
                   
 
-                  <div v-if="!showingMovie">
-                    <div v-if="!ShowRandom">
-                      <strong v-if="!(multipleYears)" class="minutes">{{i+ (showingPage * 20 -19) }}  </strong>&nbsp; &nbsp;<strong v-if="!(multipleYears)">  {{ result.original_name }} <br></strong>
-                      <strong v-if="multipleYears && !decades" class="minutes">{{i-19}}  </strong>&nbsp; &nbsp;<strong v-if="multipleYears && !decades"> {{ result.original_name }} </strong>
-                      <strong v-if="multipleYears && decades && (i-19) %  10 !==0 " class="minutes">{{result.first_air_date.substring(0,4)}}: NO.{{(i-19) %  10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 !==0 " >  {{ result.original_name }} </strong>
-                      <strong v-if="multipleYears && decades && (i-19) %  10 ===0" class="minutes">{{result.first_air_date.substring(0,4)}}: NO.{{10}}  </strong> &nbsp; &nbsp;<strong v-if="multipleYears && decades && (i-19) %  10 ===0" >  {{ result.original_name }} </strong>
-                    </div>
-                    <div v-else>
-                      <strong>{{i -19}}. </strong>&nbsp;
-                      <strong class="minutes">NO.{{rankingLists[i-20].rank}} from {{rankingLists[i-20].year}}</strong><br>
-                      <!-- <strong>---{{i}}---</strong> -->
-                      <strong>  {{ result.original_name}} </strong>
-                    </div>
+                </ul>
+              </div>
+              <div v-if="isFetchingMovie === true">
+                <div v-if="!isImageLoaded">
+                  <div v-if="!(result.poster_path === null)">
+                    <img src="https://media3.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" alt=""  >
                   </div>
-                </li>
-
-                <div><!--button -->
-                  <div><!-- link -->
-                    <li v-if="tabMovieSelected">
-                        <div v-if="result.adult">
-                          <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
-                          <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Check this on Google<br><br></a>
-                        </div>
-                        <div v-else>
-                          <a v-bind:href="'https://www.themoviedb.org/movie/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
-                          <a v-bind:href="'https://www.google.com/search?q=movie '+ result.original_title" target="_blank">Google<br><br></a>
-                        </div>
-                    </li>
-                    <li v-if="!tabMovieSelected">
-                        <div v-if="result.adult">
-                          <a v-bind:href="'https://www.themoviedb.org/search?query=' + result.original_title" target="_blank">TMDB</a>&nbsp;&nbsp;
-                          <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Check this on Google<br><br></a>
-                        </div>
-                        <div v-else>
-                          <a v-bind:href="'https://www.themoviedb.org/tv/' + result.id" target="_blank">TMDB</a>&nbsp;&nbsp;
-                          <a v-bind:href="'https://www.google.com/search?q=tv '+ result.original_name" target="_blank">Google<br><br></a>
-                        </div>
-                    </li>
-                  </div>
-                
-                  <div> <!-- toggle button-->
-                    <div v-if="showingMovie">
-                      <button v-if="isLoggedIn && !(!!MFaLists[result.id])" @click="toggleLists(result.id,'favorite')"  class="favButton" >Favorite<br></button>
-                      <button v-if="isLoggedIn && (!!MFaLists[result.id])" @click="toggleLists(result.id,'favorite')" class="notfavButton">Favorite<br></button> &nbsp;
-
-                      <button v-if="isLoggedIn && !(!!MPaLists[result.id]) &&!(!!MFaLists[result.id])" @click="toggleLists(result.id,'past')" class="pastButton" >Watched Before<br></button>
-                      <button v-if="isLoggedIn && (!!MPaLists[result.id]) &&!(!!MFaLists[result.id])" @click="toggleLists(result.id,'past')" class="notpastButton">Watched before  <br></button> &nbsp;
-                      <button v-if="isLoggedIn && (!!MFaLists[result.id])" @click="toggleLists(result.id,'past', true)" class="notpastButton">Watched before <br></button> &nbsp;
-
-                      <button v-if="isLoggedIn && !(!!MFuLists[result.id]) &&!(!!MPaLists[result.id])" @click="toggleLists(result.id,'future')" class="futureButton" >Watch Later<br></button>
-                      <button v-if="isLoggedIn && (!!MFuLists[result.id])" @click="toggleLists(result.id,'future')" class="notfutureButton">Watch Later<br></button>
-                      <button v-if="isLoggedIn && (!!MPaLists[result.id])" @click="toggleLists(result.id,'future',true)" class="futureButton">Watch Later<br></button>
-                       &nbsp;
-
-
-
-                    </div>
-                    <div v-if="!showingMovie">
-                      <button v-if="isLoggedIn && !(!!TFaLists[result.id])" @click="toggleLists(result.id,'favorite')"  class="favButton" >Favorite<br></button>
-                      <button v-if="isLoggedIn && (!!TFaLists[result.id])" @click="toggleLists(result.id,'favorite')" class="notfavButton">Favorite<br></button> &nbsp;
-
-                      <button v-if="isLoggedIn && !(!!TPaLists[result.id]) &&!(!!TFaLists[result.id])" @click="toggleLists(result.id,'past')" class="pastButton" >Watched Before <br></button>
-                      <button v-if="isLoggedIn && (!!TPaLists[result.id]) &&!(!!TFaLists[result.id])" @click="toggleLists(result.id,'past')" class="notpastButton">Watched before  <br></button> &nbsp;
-                      <button v-if="isLoggedIn && (!!TFaLists[result.id])" @click="toggleLists(result.id,'past', true)" class="notpastButton">Watched before <br></button> &nbsp;
-
-                      <button v-if="isLoggedIn && !(!!TFuLists[result.id]) &&!(!!TPaLists[result.id])" @click="toggleLists(result.id,'future')" class="futureButton" >Watch Later 1<br></button>
-                      <button v-if="isLoggedIn && (!!TFuLists[result.id])" @click="toggleLists(result.id,'future')" class="notfutureButton">Watch Later2<br></button> &nbsp;
-                      <button v-if="isLoggedIn && (!!TPaLists[result.id])" @click="toggleLists(result.id,'future',true)" class="futureButton">Watch Later3<br></button>
-                      <br>
-                      <strong v-if="TFaLists[result.id]">fav o</strong>
-                      <strong v-else>fav x</strong>&nbsp;
-                      <strong v-if="TPaLists[result.id]">past o</strong>
-                      <strong v-else>past x</strong>&nbsp;
-                      <strong v-if="TFuLists[result.id]">future o</strong>
-                      <strong v-else>future x</strong>&nbsp;
-                    </div>
-                  </div>
-
-                </div>
-
-                <li >
-                  <div class="reusult">
-                    <div class="title" v-if="result.vote_average !== 0">Rating: {{ result.vote_average }}</div>
-                    <div class="title" v-else>No data </div>
-                  </div>
-                </li>
-                <li>
-                  <div class="reusult">
-                    <div class="title" v-if="result.popularity !== null || result.popularity === 0">Popularity: {{ result.popularity }}</div>
-                  </div>
-                </li>
-                <li>
-                  <div class="reusult">
-                    <div class="title">{{ result.release_date }}</div>
-                    <div class="title">{{ result.first_air_date }}</div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div v-if="isFetchingMovie === true">
-              <div v-if="!isImageLoaded">
-                <div v-if="!(result.poster_path === null)">
-                  <img src="https://media3.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" alt=""  >
                 </div>
               </div>
-            </div>
-            <div v-else>
-              <img class="poster" :src="'https://image.tmdb.org/t/p/w300' + result.poster_path" alt="" v-if="result.poster_path !== null"  @load="isImageLoaded = true">
-            </div>
+              <div v-else>
+                <img class="poster" :src="'https://image.tmdb.org/t/p/w300' + result.poster_path" alt="" v-if="result.poster_path !== null"  @load="isImageLoaded = true">
+              </div>
 
-            
+              
+            </div>
+          </div>
+          <div v-if="
+            (showingMovie && shownTab === 'favorites' && MFaCount === 0) || 
+            (showingMovie && shownTab === 'past' && MPaCount === 0) || 
+            (showingMovie && shownTab === 'future' && MFuCount === 0) || 
+            (!showingMovie && shownTab === 'favorites' && TFaCount === 0) || 
+            (!showingMovie && shownTab === 'past' && TPaCount === 0) || 
+            (!showingMovie && shownTab === 'future' && TMFuCount === 0) 
+          ">
+
           </div>
           
           <div  v-if="result.poster_path === null">
@@ -465,17 +590,31 @@
               <img src="data:image/png;base64,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">
             </div>
           </div>
-          <div class="overview" v-if="result.overview !== ''">
-              <strong id="overview">{{result.overview}}</strong>
-          </div>
-          <div class="overview" v-else>
-            <div v-if="condition === 'randomSuccess'">
-              <strong id="overview">No reviews yet</strong>
+
+          <div v-if="detailNeeded"> <!-- overview -->
+            <div class="overview" v-if="result.overview !== ''"> 
+                <strong id="overview">{{result.overview}}</strong>
+            </div>
+            <div class="overview" v-else>
+              <div v-if="condition === 'randomSuccess'">
+                <strong id="overview">No reviews yet</strong>
+              </div>
             </div>
           </div>
+          
         </div>
           <!-- <hr v-if="condition === 'randomSuccess'"> -->
         
+      </div>
+      <div v-if="
+            (showingMovie && shownTab === 'favorites' && MFaCount === 0) || 
+            (showingMovie && shownTab === 'past' && MPaCount === 0) || 
+            (showingMovie && shownTab === 'future' && MFuCount === 0) || 
+            (!showingMovie && shownTab === 'favorites' && TFaCount === 0) || 
+            (!showingMovie && shownTab === 'past' && TPaCount === 0) || 
+            (!showingMovie && shownTab === 'future' && TMFuCount === 0) 
+          ">
+          <strong class="overview">No contentents on this list</strong>
       </div>
 
       <div v-if="movieHit === 0 && countForLoop !== 0"><!-- cant find movie -->
@@ -490,32 +629,110 @@
 
     </div>
 
-    <div v-if="shownTab=== 'searching' && !multipleYears  && paginationNeeded " ><!--  Bottom Showing pagination for searching-->
+
+    <div><!--bottom part -->
+      <div><!-- lists pagination bottom -->
+        <div v-if="
+                (showingMovie && shownTab === 'favorites' && MFaCount === 0) || 
+                (showingMovie && shownTab === 'past' && MPaCount === 0) || 
+                (showingMovie && shownTab === 'future' && MFuCount === 0) || 
+                (!showingMovie && shownTab === 'favorites' && TFaCount === 0) || 
+                (!showingMovie && shownTab === 'past' && TPaCount === 0) || 
+                (!showingMovie && shownTab === 'future' && TMFuCount === 0) 
+              ">
+            </div>
+        <div v-else>
+          <hr>
+          <strong class="title" v-if="movieHit > 0 && showingMovie">Showing {{ (showingPage * 20) - 19 }} - {{ (showingPage * 20) - 20 + movieHit }}
+            <strong v-if="shownTab === 'searching'"> Movies from {{contentYear}}</strong>
+            <strong v-if="shownTab=== 'favorites' "> of {{MFaCount}} movies</strong>
+            <strong v-if="shownTab=== 'past' "> of {{MPaCount}} movies</strong>
+            <strong v-if="shownTab=== 'future' "> of {{MFuCount}} movies</strong>
+          </strong>
+
+          <strong class="title" v-if="movieHit > 0 && !showingMovie">Showing {{ (showingPage * 20) - 19 }} - {{ (showingPage * 20) - 20 + movieHit }}
+            <strong v-if="shownTab === 'searching'"> TV Shows {{contentYear}}</strong>
+            <strong v-if="shownTab=== 'favorites' "> of {{TFaCount}} TV Shows</strong>
+            <strong v-if="shownTab=== 'past' "> of {{TPaCount}} TV Shows</strong>
+            <strong v-if="shownTab=== 'future' "> of {{TFuCount}} TV Shows</strong>
+          </strong>
+
+
+          <div v-if="shownTab === 'favorites' || shownTab === 'past' || shownTab === 'future'"><!-- Pagination for lists-->
+            <br><br>
+            <div v-if="showingMovie && shownTab === 'favorites'">
+              <button class="pagenation" v-for="index in roundUpMFa" :key="index"  @click="showLists(index,'favorites')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="showingMovie && shownTab === 'past'">
+              <button class="pagenation" v-for="index in roundUpMPa" :key="index"  @click="showLists(index,'past')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="showingMovie && shownTab === 'future'">
+              <button class="pagenation" v-for="index in roundUpMFu" :key="index"  @click="showLists(index,'future')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+
+
+            <div v-if="!showingMovie && shownTab === 'favorites'">
+              <button class="pagenation" v-for="index in roundUpTFa" :key="index"  @click="showLists(index,'favorites')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="!showingMovie && shownTab === 'past'">
+              <button class="pagenation" v-for="index in roundUpTPa" :key="index"  @click="showLists(index,'past')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+            <div v-if="!showingMovie && shownTab === 'future'">
+              <button class="pagenation" v-for="index in roundUpTFu" :key="index"  @click="showLists(index,'future')">
+                  <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+                  <strong v-else>{{index}}</strong>
+              </button>&nbsp;
+            </div>
+
+
+          </div>
+
+        </div> 
+      </div>
+
+      <div v-if="shownTab=== 'searching' && !multipleYears  && paginationNeeded " ><!--  Bottom Showing pagination for searching-->
+      <br>
       <div v-if="showingMovie">
         <button class="pagenation" v-for="index in 10" :key="index"  @click="contentYearSearch(index,'movie')">
           <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
           <strong v-else>{{index}}</strong>
         </button>&nbsp;
       </div>
+      <div v-else>
+        <button class="pagenation" v-for="index in 10" :key="index"  @click="contentYearSearch(index,'tv')">
+          <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
+          <strong v-else>{{index}}</strong>
+        </button>&nbsp;
+      </div>
     </div>
 
-
-    <div v-if="shownTab === 'myFavLists'"><!-- Bottom pagination for fav lists -->
-      <hr>
-      <div v-if="paginationNeeded && movieHit !==0 && showingMovie" >
-        <button class="pagenation" v-for="index in roundUpPAge" :key="index"  @click="showFavLists(index,'movie')">
-            <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
-            <strong v-else>{{index}}</strong>
-        </button>&nbsp;
-      </div>
-      <div v-if="paginationNeeded && movieHit !==0 && !showingMovie" >
-        <button class="pagenation" v-for="index in roundUpPAgeTv" :key="index"  @click="showFavLists(index,'tv')">
-            <strong v-if="index === showingPage" class="displayedPage">{{index}}</strong>
-            <strong v-else>{{index}}</strong>
-        </button>&nbsp;
-      </div>
+    <div v-if="showingYear !== 0"><!-- go to next year-->
       <br>
+      <button @click="changeingYear(parseInt(contentYear)-1)" v-if="movieHit > 0">{{parseInt(contentYear)-1}}</button>&nbsp;
+      <strong class="title" v-if="movieHit > 0">from {{contentYear}}</strong>&nbsp;
+      <button @click="changeingYear(parseInt(contentYear)+1)" v-if="movieHit > 0">{{parseInt(contentYear) +1}}</button>
     </div>
+    </div>
+    
+
+     
+
+
 
     <back-to-top text="Back to top"></back-to-top>
     
@@ -688,6 +905,10 @@ export default defineComponent( {
       firstApi: null,
       secondApi: null,
       shownType: null,
+
+      changingLists: false,
+      detailNeeded: false,
+      simplifyNeeded: false,
       
 
 
@@ -736,7 +957,8 @@ export default defineComponent( {
         this.tvHit = 0,
         this.ShowRandom = false,
         this.countForLoop = 0;
-        this.shownLists=  'favorites',
+        this.shownLists=  'favorites';
+        this.simplifyNeeded =false;
 
         // this.firstYear = 1995
         
@@ -961,7 +1183,7 @@ export default defineComponent( {
               this.TFaCount ++;
             } 
           }
-          this.roundUpMPa = Math.ceil(this.updatedTFaLists.length /20)
+          this.roundUpTFa = Math.ceil(this.updatedTFaLists.length /20)
         } 
       });
 
@@ -1017,10 +1239,11 @@ export default defineComponent( {
       console.log('jeuy')
 
 
-
+      this.remMe = this.simplifyNeeded
       this.rememberME = this.showingMovie
       this.resetResult()
       this.showingMovie = this.rememberME
+      this.simplifyNeeded = this.remMe
 
       this.decades = false;
       this.pageForMyLists = true;
@@ -1037,6 +1260,8 @@ export default defineComponent( {
       let fakeLists = [];
       let maxForPage = 0;
       this.shownType = type;
+
+      this.condition = 'randomSuccess'
 
 
 
@@ -1080,7 +1305,9 @@ export default defineComponent( {
       const res = await fetch(this.ApiURL)
       const json = await res.json()
       fakeLists = fakeLists.concat(json)
+      this.results= fakeLists
       this.countCount ++
+      this.condition = 'randomSuccess'
 
       if(page* 20 >= this. countRep){
         maxForPage = this.countRep
@@ -1104,7 +1331,7 @@ export default defineComponent( {
       }
     
       this.isFetchingMovie = false
-      this.condition = 'randomSuccess'
+      
       
 
       this.results= fakeLists
@@ -1113,15 +1340,18 @@ export default defineComponent( {
     },
 
     togggleShowingMovie(){
+      this.remMe = this.simplifyNeeded
       this.rememberME = this.showingMovie
       this.resetResult();
       this.showingMovie = !this.rememberME
+      this.simplifyNeeded = this.remMe
       this.showLists(1,this.shownType)
 
     },
 
 
     async toggleLists(contentId, kind, needConfirmation ){
+      this.changingLists = true;
       if(needConfirmation){
         let r= confirm('Are you sure you want to do that?');
         if(!r){
@@ -1219,7 +1449,9 @@ export default defineComponent( {
             await docRef3.set(favoriteData3)
           }
 
+          
         }
+        this.changingLists = false;
 
       }else{
         if(kind === 'favorite'){
@@ -1308,6 +1540,7 @@ export default defineComponent( {
 
           
         }
+        this.changingLists = false;
 
       }
 
@@ -1315,56 +1548,18 @@ export default defineComponent( {
       // console.log(`${this.MFaLists[contentId]}, ${this.MPaLists[contentId]}, ${this.MFuLists[contentId]}`)
     },
 
-    async toggleFavorite(contentId) {
-      console.log('trying..')
-      if (!this.currentUser) return
-
-      let folder = 'userMovieFavorites'
-      if(!this.showingMovie){
-        folder = 'userTvFavorites'
-      }
-
-      let docRef = db.collection(folder).doc(this.currentUser.uid)
-      console.log(contentId)
-      
-      const val = await docRef.get()
-
-      const favoriteData = val.exists ? val.data() : {}
-
-      /**
-       * 既にtrueだったら -> falseに変わる
-       * 既にfalseふぁったら -> trueに変わる
-       * まだない(undefined)だったら -> trueに変わる
-       */
-      favoriteData[contentId] = !favoriteData[contentId]
-  
-      await docRef.set(favoriteData)
-
-      //temorary
-      // this.favoriteData = favoriteData
-
-      /**
-       * userFavorites
-       *    ┗ userId1
-       *        ┗ {
-       *             movieId1: true
-       *             movieId2: false
-       *          }
-       *    ┗ userId2
-       * 
-       */
-      console.log(`success to: ${folder}`)
-      this.getLists()
-    },
 
     async changeingYear(year){
+      window.scrollTo(0,650)
       this.contentYear = year
       this.contentYearSearch(1);
     },
 
 
     async contentYearSearch(page){
-
+      if(page !== 1){
+        window.scrollTo(0,650)
+      }
       this.decades = false;
       this.pageForMyLists = false;
       this.multipleYears = false;
@@ -1808,7 +2003,19 @@ export default defineComponent( {
       console.log(this.results)
 
     },
+    toggleDetail(){
+      this.detailNeeded = !this.detailNeeded
+    },
+    toggleSimplify(){
+      this.simplifyNeeded= !this.simplifyNeeded
+    },
+    seletAnime(){
+      this.originalLanguage = 'ja'
+      this.chosenGenre = '16'
+    }
   },
+
+
   watch: {
     async query(val) {
       if (!val) return
@@ -1823,13 +2030,21 @@ export default defineComponent( {
 </script>
 
 <style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
 
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
 
-
-
-
-
-
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
 
 
 #app {
