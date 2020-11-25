@@ -9,6 +9,9 @@
         <strong v-if="!CountedAlredy " >
           <strong >{{getLists()}}</strong>
         </strong>
+        <strong v-if="!firstMove " >
+          <strong v-if="isLoggedIn" >{{incrementVisitNum()}}</strong>
+        </strong>
         <strong class="movie-blue" >Movies</strong>, <strong class="tv-green"> TV Show</strong>,<strong class="total-red">total</strong><br>
         <strong>Favorties: <strong class="movie-blue">{{MFaCount}},</strong><strong class="tv-green"> {{TFaCount}},</strong><strong class="total-red"> {{MFaCount + TFaCount}}</strong>  &nbsp; 
           Watched: {{MPaCount}}, {{TPaCount}}, {{MPaCount + TPaCount}}&nbsp; 
@@ -31,13 +34,38 @@
         <button @click="changeTab('favorites')"  v-if="isLoggedIn &&( MFaCount !== 0 || TFaCount !==0)">Favorite Lists</button>&nbsp;
         <button  v-if="isLoggedIn &&( MFaCount === 0 && TFaCount ===0)" class="tabSelected">Favorite Lists</button>&nbsp;
 
-        <button @click="changeTab('past')"  v-if="isLoggedIn">Watched Lists</button>&nbsp;
+        <button @click="changeTab('past')"  v-if="isLoggedIn &&( MPaCount !== 0 || TPaCount !==0)">Watched Lists</button>&nbsp;
         <button  v-if="isLoggedIn &&( MPaCount === 0 && TPaCount ===0)" class="tabSelected">Watched Lists</button>&nbsp;
 
-        <button @click="changeTab('future')"  v-if="isLoggedIn">Watch Later</button>&nbsp;
+        <button @click="changeTab('future')"  v-if="isLoggedIn &&( MFuCount !== 0 || TFuCount !==0)">Watch Later</button>&nbsp;
         <button  v-if="isLoggedIn &&( MFuCount === 0 && TFuCount ===0)" class="tabSelected">Watch Later</button>&nbsp;
       </div>
       <hr v-if="(isLoggedIn && shownTab !== 'menu') ">
+
+
+      <table v-if="shownTab === 'menu' && !gettingLists" ><!-- simplifytable -->
+        <br>
+        <tr>
+          <th>Total Users</th>
+          <th>Total Visited</th>
+          <th>Total Favored Contens</th>
+          <th>Total Watched Contens</th>
+          <th>Total Watch Later Contens</th>
+        </tr>
+        <tr v-if="!gettingLists">
+          <td>{{updatedMainDataLists[4]}}</td>
+          <td>{{updatedMainDataLists[0]}}</td>
+          <td>{{updatedMainDataLists[1]}}</td>
+          <td>{{updatedMainDataLists[2]}}</td>
+          <td>{{updatedMainDataLists[3]}}</td>
+        </tr>
+        <!-- <tr v-for="(result, i) in results" :key="i">
+          <td v-if="!(multipleYears)" class="minutes">{{i + (showingPage * 20 -19) }} </td>
+          <td v-if="showingMovie"> {{ result.original_title }}</td>
+          <td v-else>{{result.original_name}} </td>
+          <td>{{result.original_language}}</td>
+        </tr> -->
+      </table>
 
 
       <div v-if="shownTab === 'favorites' || shownTab === 'past' || shownTab === 'future' "><!-- for the lists-->
@@ -102,6 +130,8 @@
               <option value="ko">Korean</option>
               <option value="0">All languages</option>
             </select> &nbsp;
+
+            <button @click="seletAnime">Anime?</button> &nbsp;
 
             <button @click="resetChoices">Reset </button>
             
@@ -909,12 +939,28 @@ export default defineComponent( {
       changingLists: false,
       detailNeeded: false,
       simplifyNeeded: false,
+
+      firstMove: false,
+
+      gettingLists: false,
+      mainDataLists: {},
+      refMain: null,
+      updatedMainDataLists: [0,0,0,0,0],
+      lenMain: null,
+
+
+      mainLoopCount: 0,
+      favCount: 0,
+      pastCount: 0,
+      futureCount: 0,
+      visitCount: 0,
+
       
 
 
     }
 
-   },
+  },
   methods: {
     resetResult(){
       let resetCount = 0;
@@ -959,6 +1005,12 @@ export default defineComponent( {
         this.countForLoop = 0;
         this.shownLists=  'favorites';
         this.simplifyNeeded =false;
+        this.firstMove = false;
+        this.mainLoopCount= 0,
+        this.favCount= 0,
+        this.pastCount= 0,
+        this.futureCount= 0,
+        this.visitCount= 0,
 
         // this.firstYear = 1995
         
@@ -983,6 +1035,8 @@ export default defineComponent( {
       }else if(page === 'future'){
         this.showLists(1,'future')
 
+      }else if(page=== 'menu'){
+        this.getMasterData()
       }
       
       
@@ -1001,6 +1055,87 @@ export default defineComponent( {
     resetChoices(){
       this.originalLanguage = '0'
       this.chosenGenre= '0';
+    },
+    async incrementVisitNum(){
+      this.firstMove = true;
+      let docRef = db.collection('database').doc('mainData')
+      let val = await docRef.get()
+      
+      let favoriteData = val.exists ? val.data() : {}
+      // console.log(doc.data())
+
+      if(!(favoriteData[this.currentUser.uid])){
+        favoriteData[this.currentUser.uid] = [1,0,0,0];
+      }else{
+        favoriteData[this.currentUser.uid][0]++
+      }
+      
+      await docRef.set(favoriteData)
+      this.getMasterData()
+      
+
+    },
+    async getMasterData(){
+      this.gettingLists = true
+      this.favCount = 0
+      this.pastCount = 0
+      this.visitCount = 0
+      this.futureCount= 0
+      // let docRef = db.collection('database').doc('mainData')
+      // let val = await docRef.get()
+      
+
+      this.refMain = db.collection("database").doc('mainData')
+      this.refMain.get().then((doc) => {
+        if (doc.exists) {
+          this.mainDataLists = doc.data()
+          // this.updatedMainDataLists = [0,0,0,0]
+          console.log(this.updatedMainDataLists)
+          console.log('--------------------')
+
+          let i = 0;
+
+          // [0] total user num
+          for (i in this.mainDataLists){
+            this.mainLoopCount++
+          }
+          // this.updatedMainDataLists[0]= loopCount
+          i= 0
+          for (i in this.mainDataLists){
+            this.visitCount =this.visitCount + this.mainDataLists[i][0]
+          }
+          // [1] favs
+          i= 0
+          for (i in this.mainDataLists){
+            this.favCount =this.favCount + this.mainDataLists[i][1]
+          }
+          // this.updatedMainDataLists[1]=this.favCount
+
+          // [2] past
+          i= 0
+          for (i in this.mainDataLists){
+            this.pastCount = this.pastCount + this.mainDataLists[i][2]
+          }
+          // this.updatedMainDataLists[2]=this.pastCount
+
+          // [3] past
+          i= 0
+          for (i in this.mainDataLists){
+            this.futureCount = this.futureCount + this.mainDataLists[i][3]
+          }
+          // this.updatedMainDataLists[3]=this.futureCount
+          // -------------------------------------
+          
+        }
+        let randomLists = [this.visitCount,this.favCount, this.pastCount, this.futureCount,this.mainLoopCount]
+        this.updatedMainDataLists = randomLists
+        console.log(this.mainDataLists)
+        console.log(this.updatedMainDataLists)
+        this.gettingLists = false
+
+      })
+
+       
     },
     
     toggleTab(){
@@ -1166,7 +1301,7 @@ export default defineComponent( {
           }
           this.roundUpMFu = Math.ceil(this.updatedMFuLists.length /20)
         } 
-        console.log(`count: ${this.MFuCount}`)
+        // console.log(`count: ${this.MFuCount}`)
       });
 
       // 4
@@ -1449,9 +1584,14 @@ export default defineComponent( {
             await docRef3.set(favoriteData3)
           }
 
+
+          
+
           
         }
         this.changingLists = false;
+
+        
 
       }else{
         if(kind === 'favorite'){
@@ -1544,7 +1684,17 @@ export default defineComponent( {
 
       }
 
+
+
       this.getLists()
+      console.log('updating main data')
+        let docRef = db.collection('database').doc('mainData')
+        let val = await docRef.get()
+        let favoriteData = val.exists ? val.data() : {}
+        console.log(docRef)
+        favoriteData[this.currentUser.uid] = [favoriteData[this.currentUser.uid][0] ,this.MFaCount+ this.TFaCount,this.MPaCount + this.TPaCount, this.MFuCount + this.TFuCount]
+        await docRef.set(favoriteData)
+        console.log('done')
       // console.log(`${this.MFaLists[contentId]}, ${this.MPaLists[contentId]}, ${this.MFuLists[contentId]}`)
     },
 
